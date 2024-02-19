@@ -14,6 +14,45 @@
 void rrecv(unsigned short int myUDPport, 
             char* destinationFile, 
             unsigned long long int writeRate) {
+                int sockfd;
+    struct sockaddr_in my_addr;
+    char buffer[1024];
+    int n;
+    FILE* file;
+    socklen_t len;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&my_addr, 0, sizeof(my_addr));
+
+    // Filling server information
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_port = htons(myUDPport);
+    my_addr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket with the server address
+    if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    file = fopen(destinationFile, "wb");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Receive data
+    while ((n = recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr *) &my_addr, &len)) > 0) {
+        fwrite(buffer, 1, n, file);
+    }
+
+    fclose(file);
+    close(sockfd);
 
 }
 
@@ -25,10 +64,18 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
 
-    if (argc != 3) {
+    if (argc != 4) {
+        fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
     }
 
     udpPort = (unsigned short int) atoi(argv[1]);
+    char* destinationFile = argv[2];
+    unsigned long long int writeRate = atoll(argv[3]);
+
+   rrecv(udpPort, destinationFile, writeRate);
+   printf("this is running");
+
+    return EXIT_SUCCESS;
 }

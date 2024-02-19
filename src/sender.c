@@ -11,11 +11,47 @@
 #include <pthread.h>
 #include <errno.h>
 
+#define BUFFER_SIZE 1024
+
 void rsend(char* hostname, 
             unsigned short int hostUDPport, 
             char* filename, 
             unsigned long long int bytesToTransfer) 
 {
+    int sockfd;
+    struct sockaddr_in receiver_addr;
+    char buffer[1024];
+    int bytesRead, totalBytesSent = 0;
+    FILE* file;
+
+    // Create socket
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&receiver_addr, 0, sizeof(receiver_addr));
+
+    // Filling receiver information
+    receiver_addr.sin_family = AF_INET;
+    receiver_addr.sin_port = htons(hostUDPport);
+    receiver_addr.sin_addr.s_addr = inet_addr(hostname); // Use inet_pton for better validation
+
+    // Open file
+    file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Send data
+    while ((bytesRead = fread(buffer, 1, BUFFER_SIZE, file)) > 0 && totalBytesSent < bytesToTransfer) {
+        sendto(sockfd, buffer, bytesRead, 0, (const struct sockaddr*) &receiver_addr, sizeof(receiver_addr));
+        totalBytesSent += bytesRead;
+    }
+
+    fclose(file);
+    close(sockfd);
 
 }
 
@@ -34,7 +70,10 @@ int main(int argc, char** argv) {
     }
     hostUDPport = (unsigned short int) atoi(argv[2]);
     hostname = argv[1];
+    char* filename = argv[3];
     bytesToTransfer = atoll(argv[4]);
+    rsend(hostname, hostUDPport, filename, bytesToTransfer);
+
 
     return (EXIT_SUCCESS);
 }
