@@ -24,7 +24,6 @@ void rsend(char* hostname,
     int bytesRead, totalBytesSent = 0;
     FILE* file;
 
-    // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
