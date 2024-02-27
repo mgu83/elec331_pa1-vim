@@ -32,19 +32,16 @@ void rsend(char* hostname,
 
     memset(&receiver_addr, 0, sizeof(receiver_addr));
 
-    // Filling receiver information
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(hostUDPport);
-    receiver_addr.sin_addr.s_addr = inet_addr(hostname); // Use inet_pton for better validation
+    receiver_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_pton?
 
-    // Open file
     file = fopen(filename, "rb");
     if (file == NULL) {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
 
-    // Send data
     while ((bytesRead = fread(buffer, 1, BUFFER_SIZE, file)) > 0 && totalBytesSent < bytesToTransfer) {
         sendto(sockfd, buffer, bytesRead, 0, (const struct sockaddr*) &receiver_addr, sizeof(receiver_addr));
         totalBytesSent += bytesRead;

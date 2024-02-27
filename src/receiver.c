@@ -19,9 +19,8 @@ void rrecv(unsigned short int myUDPport,
     char buffer[1024];
     int n;
     FILE* file;
-    socklen_t len;
+    socklen_t len = sizeof(my_addr);
 
-    // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
@@ -29,12 +28,10 @@ void rrecv(unsigned short int myUDPport,
 
     memset(&my_addr, 0, sizeof(my_addr));
 
-    // Filling server information
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(myUDPport);
     my_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -46,7 +43,6 @@ void rrecv(unsigned short int myUDPport,
         exit(EXIT_FAILURE);
     }
 
-    // Receive data
     while ((n = recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr *) &my_addr, &len)) > 0) {
         fwrite(buffer, 1, n, file);
     }
