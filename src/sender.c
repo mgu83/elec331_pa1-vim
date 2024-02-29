@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <netdb.h>
 #include <pthread.h>
 #include <errno.h>
 
@@ -33,7 +33,7 @@ void rsend(char* hostname,
 
     receiver_addr.sin_family = AF_INET;
     receiver_addr.sin_port = htons(hostUDPport);
-    receiver_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_pton?
+    receiver_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
 
     file = fopen(filename, "rb");
     if (file == NULL) {
@@ -43,8 +43,10 @@ void rsend(char* hostname,
 
     while ((bytesRead = fread(buffer, 1, BUFFER_SIZE, file)) > 0 && totalBytesSent < bytesToTransfer) {
         sendto(sockfd, buffer, bytesRead, 0, (const struct sockaddr*) &receiver_addr, sizeof(receiver_addr));
+         printf("Bytes read: %d\n", bytesRead); 
         totalBytesSent += bytesRead;
     }
+    printf("done");
 
     fclose(file);
     close(sockfd);
