@@ -16,7 +16,7 @@ void rsend(char* hostname,
             char* filename, 
             unsigned long long int bytesToTransfer) 
 {
-
+    
 }
 
 int main(int argc, char** argv) {
@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
     int hostUDPport;
     unsigned long long int bytesToTransfer;
     char* hostname = NULL;
+    int socksen_fd;
+    struct sockaddr_in addrrec; 
 
     if (argc != 5) {
         fprintf(stderr, "usage: %s receiver_hostname receiver_port filename_to_xfer bytes_to_xfer\n\n", argv[0]);
@@ -35,6 +37,9 @@ int main(int argc, char** argv) {
     hostUDPport = (unsigned short int) atoi(argv[2]);
     hostname = argv[1];
     bytesToTransfer = atoll(argv[4]);
+
+
+
 
     return (EXIT_SUCCESS);
 }
