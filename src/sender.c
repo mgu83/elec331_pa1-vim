@@ -31,7 +31,8 @@
 #define BUFFER_SIZE 1024
 
 struct sockaddr_in my_addr, other_addr;
-int sockfd, slen;
+int sockfd;
+socklen_t slen;
 FILE* file;
 uint64_t seq_num;
 status_type status;
@@ -61,19 +62,18 @@ void send_pkt(packet* pkt){
  * 
  */
 void queue_send(){
-    printf("Inside queue_send()\n");
     // Check if there is anything to send
     if (bytes_to_send == 0){
         return;
     }
-    printf("after condition check\n");
     // Initialize bugger to store file data
     char buffer[MSS];
     
     packet pkt;
     
     int packets_to_send = floor((cong_win_size - size(backup_queue) * MSS) / MSS); // available space / max space per packet
-    printf("after pack to send init\n");
+    
+    
     for (int i = 0; i < packets_to_send; i++){
         
         size_t read_size = fread(buffer, sizeof(char), MIN(bytes_to_send, MSS), file);
@@ -91,7 +91,7 @@ void queue_send(){
             bytes_to_send -= read_size;
         }
     }
-    printf("After forloop\n");
+    
     // Send all packets from the first queue
     while (!isEmpty(first_queue)){
         packet p = front(first_queue);
@@ -122,6 +122,7 @@ void handle_ack(packet* pkt){
         int count = 0;
         total_received += num_pkt;
         while(!isEmpty(backup_queue) && count < num_pkt){
+            printf("Received ACK for packet %d \n", front(backup_queue).seq_num);
             dequeue(backup_queue);
             count++;
         }
@@ -177,9 +178,6 @@ void rsend(char* hostname,
     other_addr.sin_family = AF_INET;
     other_addr.sin_port = htons(hostUDPport);
     other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
-    other_addr.sin_family = AF_INET;
-    other_addr.sin_port = htons(hostUDPport);
-    other_addr.sin_addr.s_addr = inet_addr(hostname);
     printf("After memset\n");
     file = fopen(filename, "rb");
     if (file == NULL) {
@@ -203,10 +201,17 @@ void rsend(char* hostname,
     queue_send();
     printf("Queue sent\n");
     while (total_sent < total_num_pkt || total_received < total_num_pkt){
+        printf("Waiting for ACKs\n");
+        slen = sizeof(other_addr);
+        if (recvfrom(sockfd, &pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1) {
+            printf("error in recvfrom");
+        }
+
         if (pkt.pkt_type == ACK){
             handle_ack(&pkt);
         }
     }
+    printf("All ACKs received\n");
     end_connection();
     fclose(file);
 }

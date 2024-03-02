@@ -117,7 +117,6 @@ void rrecv(unsigned short int myUDPport,
                 pq_pop(pq);
             }
             
-            write_flag = 0;
 
         }
         // Send acknowledgment to the sender that packet has been received 
@@ -126,7 +125,7 @@ void rrecv(unsigned short int myUDPport,
    }
     fclose(file);
     close(sockfd);
-    printf("%sockfd received.", destinationFile);
+    printf("%s received.", destinationFile);
 }
 
 int main(int argc, char** argv) {
