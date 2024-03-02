@@ -30,6 +30,7 @@
 struct sockaddr_in my_addr, si_other;
 int sockfd, slen;
 int write_flag = 1;
+socklen_t len;
 
 PriorityQueue * pq;
 
@@ -38,8 +39,9 @@ void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
-    if (sendto(sockfd, &ack, sizeof(packet), 0, (struct sockaddr*) &si_other, slen) == -1) {
-        printf("error in sending acknowledgement");
+    if (sendto(sockfd, &ack, sizeof(packet), 0, (struct sockaddr*) &si_other, len) == -1) {
+        perror("error in sending acknowledgement\n");
+
     }
 }
 
@@ -59,7 +61,7 @@ void rrecv(unsigned short int myUDPport,
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(myUDPport);
     my_addr.sin_addr.s_addr = INADDR_ANY;
-    socklen_t len = sizeof(my_addr);
+    
     printf("Now binding\n");
 
     if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
@@ -75,12 +77,13 @@ void rrecv(unsigned short int myUDPport,
     
     while (write_flag) {
       packet recv_pkt;
-      printf("inside while loop \n");
+      
       // Receiving the packet
-      if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, NULL, 0) == -1) {
+      len = sizeof(si_other);
+      if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&si_other, (socklen_t*)&len) == -1) {
         printf("error in recvfrom");
       }
-      printf("after recv: %s \n", recv_pkt.data);
+      
       // Check if the packet is last
       if (recv_pkt.pkt_type == FIN){
           printf("FIN packet has been received");
@@ -99,12 +102,12 @@ void rrecv(unsigned short int myUDPport,
               }
         }
         else {
-            printf("writing to dest \n");
+            
             // Write to the destination file 
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
             }
-            printf("after writint to dest \n");
+            
             ack_num += recv_pkt.data_size;
             // Use priority queue to select top packets 
             while (!pq_empty(pq) && (pq_top(pq).seq_num == ack_num)){
@@ -113,12 +116,12 @@ void rrecv(unsigned short int myUDPport,
                 ack_num += pkt.data_size;
                 pq_pop(pq);
             }
-            printf("reaches after second while\n");
+            
             write_flag = 0;
 
         }
         // Send acknowledgment to the sender that packet has been received 
-        //send_ack(ack_num, ACK); //NOTE: not sending anything to sender for now bc sender does not have a bound port
+        send_ack(ack_num, ACK); //NOTE: not sending anything to sender for now bc sender does not have a bound port
       }
    }
     fclose(file);

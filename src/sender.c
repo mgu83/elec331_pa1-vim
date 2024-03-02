@@ -1,6 +1,6 @@
 /**
  * @file sender.c
- * @author Maggie Gu (@mgu83)
+ * @author Maggie Gu (@mgu83) Vi Kankanamge (@vidunikankan)
  * @brief 
  * 
  * 
@@ -173,9 +173,13 @@ void rsend(char* hostname,
     }
 
     memset((char *) &other_addr, 0, sizeof (other_addr));
+    memset((char *) &my_addr, 0, sizeof (my_addr));
     other_addr.sin_family = AF_INET;
     other_addr.sin_port = htons(hostUDPport);
     other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
+    other_addr.sin_family = AF_INET;
+    other_addr.sin_port = htons(hostUDPport);
+    other_addr.sin_addr.s_addr = inet_addr(hostname);
     printf("After memset\n");
     file = fopen(filename, "rb");
     if (file == NULL) {
