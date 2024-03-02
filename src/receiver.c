@@ -27,6 +27,7 @@ void rrecv(unsigned short int myUDPport,
     int listen_flag = 1;
     //struct sockaddr_storage addr;
     socklen_t slen = sizeof(cliaddr);
+    int n;
 
 
 
@@ -46,27 +47,38 @@ void rrecv(unsigned short int myUDPport,
 		exit(EXIT_FAILURE);
 	}
 
-    len = recvfrom(sock, buffer, MAXBYTES, 0, &cliaddr, &slen);
-    printf("length of message received: %d \n", len);
+    //len = recvfrom(sock, buffer, MAXBYTES, 0, &cliaddr, &slen);
+    //printf("length of message received: %d \n", len);
     //buffer[len] = '\0';
-    /*while(listen_flag){
-        struct timeval timeout;
+    int count = 0;
+    while(listen_flag){
+        printf("inside while loop %d \n", count);
+        /*struct timeval timeout;
         timeout.tv_sec = 1;       //timeout (secs.)
-        timeout.tv_usec = 0;
+        timeout.tv_usec = 0;*/
         fd_set socketset;
-        FD_SET(sock+1, &socketset);//tcp socket
-        FD_SET(STDIN_FILENO, &socketset);
+        FD_ZERO(&socketset);
+        FD_SET(sock, &socketset);//udp socket (might be sock + 1)
+        //FD_SET(STDIN_FILENO, &socketset);
 
-        ready = select(2, &socketset, NULL, NULL, &timeout);
-                
-        if(ready > 0){
+        ready = select(1, &socketset, NULL, NULL, NULL);
+        if(FD_ISSET(sock, &socketset)){
+            bzero(buffer, sizeof(buffer)); 
+            printf("\nMessage from UDP client: "); 
+            n = recvfrom(sock, buffer, sizeof(buffer), 0, 
+                        (struct sockaddr*)&cliaddr, &len); 
+            puts(buffer);
+        }   
+        /*if(ready > 0){
             ioctl(sock, FIONREAD, &len);
-            len = read(sock, &buffer, MAXBYTES);
+            printf("Reading %d bytes. \n", len);
+            len = read(sock, &buffer, len);
             printf("bytesRead %i : %s", len, buffer);
             //len = recvfrom(sock, buffer, len, 0, &cliaddr, &slen);
             listen_flag = 0;
-        }
-    }*/
+        }*/
+        count++;
+    }
 
     /*while(len == 0){
         ioctl(sock, FIONREAD, &len);

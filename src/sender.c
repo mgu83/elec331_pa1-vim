@@ -40,7 +40,7 @@ void rsend(char* hostname,
     }*/
     //gethostbyname(hostname);
     cliaddrlen = sizeof(addrrec);
-   if(sendto(sock, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &addrrec, cliaddrlen) < 0){
+   if(sendto(sock, (const char *)hello, 3, 0, (const struct sockaddr *) &addrrec, cliaddrlen) < 0){
         perror("Error sending bytes\n");
         close(sock);
         exit(1);
