@@ -22,7 +22,7 @@ void rsend(char* hostname,
 {   
     int sock;
     struct sockaddr_in addrrec; 
-    char *hello = "abc";
+    char *hello = "A";
 
     if(sock = socket(AF_INET, SOCK_DGRAM, 0) < 0){
         perror("Failed to open receiver socket.. Exiting..");

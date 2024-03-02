@@ -46,6 +46,7 @@ void rrecv(unsigned short int myUDPport,
 	}
     
     len = recvfrom(sock, buffer, len, 0, &cliaddr, &slen);
+    //buffer[len] = '\0';
     /*while(listen_flag){
         struct timeval timeout;
         timeout.tv_sec = 1;       //timeout (secs.)
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
     char * dest = NULL;
     unsigned long long int rate;
 
-    printf("inside main");
+    
     if (argc != 3) {
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
