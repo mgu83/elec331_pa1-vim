@@ -34,6 +34,7 @@ struct sockaddr_in my_addr, other_addr;
 int sockfd;
 socklen_t slen;
 FILE* file;
+FILE* send_file;
 uint64_t seq_num;
 status_type status;
 float cong_win_size = MSS;
@@ -122,7 +123,7 @@ void handle_ack(packet* pkt){
         int count = 0;
         total_received += num_pkt;
         while(!isEmpty(backup_queue) && count < num_pkt){
-            printf("Received ACK for packet %d \n", front(backup_queue).seq_num);
+            printf("Received ACK for packet %d \n", (front(backup_queue).seq_num)/MSS);
             dequeue(backup_queue);
             count++;
         }
@@ -233,6 +234,25 @@ int main(int argc, char** argv) {
     hostname = argv[1];
     char* filename = argv[3];
     bytesToTransfer = atoll(argv[4]);
+    
+    printf("%s\n", filename);
+    send_file = fopen(filename, "wb");
+    if (send_file == NULL) {
+        perror("Failed to open file at beginning");
+        fclose(send_file);
+        exit(EXIT_FAILURE);
+    }
+    for(int i = 65; i < 91; i++){
+        char c = (char)i;
+        for(int j = 0; j < MSS; j++){
+            if(fwrite(&c, sizeof(char), 1, send_file) != 1){
+                perror("error writing to file\n");
+            }
+        }
+
+    }
+    fclose(send_file);
+
     rsend(hostname, hostUDPport, filename, bytesToTransfer);
 
     return (EXIT_SUCCESS);
