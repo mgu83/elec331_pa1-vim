@@ -144,6 +144,14 @@ void send_final_ack(){
     }
 }
 
+/**
+ * @brief Controls all the functions on receiver side
+ * 
+ * @param hostname 
+ * @param hostUDPport 
+ * @param filename 
+ * @param bytesToTransfer 
+ */
 void rsend(char* hostname, 
             unsigned short int hostUDPport, 
             char* filename, 

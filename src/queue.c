@@ -1,3 +1,10 @@
+/**
+ * @file queue.c
+ * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
+ * @brief Header file of queue data structure
+ * @bug None
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "types.h"

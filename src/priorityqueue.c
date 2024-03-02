@@ -1,4 +1,10 @@
-#include <stdio.h>
+/**
+ * @file priorityqueue.c
+ * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
+ * @brief Implementation of priority queue data structure
+ * @bug None
+ * 
+ */
 #include <stdlib.h>
 
 #define INITIAL_SIZE 10

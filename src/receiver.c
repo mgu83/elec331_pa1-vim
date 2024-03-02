@@ -1,7 +1,7 @@
 /**
  * @file receiver.c
  * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
- * @brief 
+ * @brief Receiver side functions 
  * 
  */
 #include <stdio.h>
@@ -32,19 +32,35 @@ int sockfd, slen;
 int write_flag = 1;
 socklen_t len;
 
+/**
+ * @brief Priority queue to hold packets that prioritizes packets 
+ * based on number
+ * 
+ */
 PriorityQueue * pq;
 
-
+/**
+ * @brief Send acknowledgement to sender that packet has been received
+ * 
+ * @param ack_num 
+ * @param pkt_type 
+ */
 void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
     if (sendto(sockfd, &ack, sizeof(packet), 0, (struct sockaddr*) &other_addr, len) == -1) {
         perror("error in sending acknowledgement\n");
-
     }
 }
 
+/**
+ * @brief Controls all the functions on receiver side
+ * 
+ * @param myUDPport 
+ * @param destinationFile 
+ * @param writeRate 
+ */
 void rrecv(unsigned short int myUDPport, 
             char* destinationFile, 
             unsigned long long int writeRate) {
@@ -102,12 +118,10 @@ void rrecv(unsigned short int myUDPport,
               }
         }
         else {
-            
             // Write to the destination file 
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
             }
-            
             ack_num += recv_pkt.data_size;
             // Use priority queue to select top packets 
             while (!pq_empty(pq) && (pq_top(pq).seq_num == ack_num)){
@@ -116,8 +130,6 @@ void rrecv(unsigned short int myUDPport,
                 ack_num += pkt.data_size;
                 pq_pop(pq);
             }
-            
-
         }
         // Send acknowledgment to the sender that packet has been received 
         send_ack(ack_num, ACK); //NOTE: not sending anything to sender for now bc sender does not have a bound port
@@ -136,14 +148,17 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc != 4) {
+    if (argc != 4 || argc != 3) {
         fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
     }
     udpPort = (unsigned short int) atoi(argv[1]);
     char* destinationFile = argv[2];
-    unsigned long long int writeRate = atoll(argv[3]);
+    unsigned long long int writeRate = 0;
+    if (argc == 3) {
+      writeRate = atoll(argv[3]);
+    }
     rrecv(udpPort, destinationFile, writeRate);
 
     return EXIT_SUCCESS;
