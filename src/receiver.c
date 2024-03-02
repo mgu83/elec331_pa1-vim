@@ -37,7 +37,7 @@ void rrecv(unsigned short int myUDPport,
     memset((char *) &addrrec, 0, sizeof(addrrec));
     addrrec.sin_family = AF_INET;
     addrrec.sin_addr.s_addr = INADDR_ANY;
-    addrrec.sin_port = htons(8080);
+    addrrec.sin_port = htons(myUDPport);
 
     if ( bind(sock, (struct sockaddr *)&addrrec,
 			sizeof(addrrec)) < 0 )
@@ -46,15 +46,15 @@ void rrecv(unsigned short int myUDPport,
 		exit(EXIT_FAILURE);
 	}
 
-    for(int i = 0; i< 4; i++){
+    //for(int i = 0; i< 4; i++){
         len = recvfrom(sock, buffer, sizeof(buffer)- 1, 0, NULL, 0);
         if(len < 0){
             perror("recvfrom failed");
-            break;
+            //break;
         }
         buffer[len] = '\0';
         printf( "%d bytes: '%s'\n", len, buffer );
-    }
+    //}
     
     close(sock);
     return;
@@ -74,15 +74,15 @@ int main(int argc, char** argv) {
     unsigned long long int rate;
 
     
-    /*if (argc != 3) {
+    if (argc != 3) {
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
     }
 
-    udpPort = (unsigned short int) atoi(argv[1]);*/
+    udpPort = (unsigned short int) atoi(argv[1]);
     
-    //rrecv(udpPort, dest, rate);
-    rrecv(0, 0, 0);
+    rrecv(udpPort, 0, 0);
+    //rrecv(0, 0, 0);
     
 
 }

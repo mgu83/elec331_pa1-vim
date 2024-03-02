@@ -32,21 +32,17 @@ void rsend(char* hostname,
 
     memset((char *) &addrrec, 0, sizeof(addrrec));
     addrrec.sin_family = AF_INET;
-	addrrec.sin_port = htons(8080);
-    addrrec.sin_addr.s_addr = inet_addr("127.0.0.1");
-	/*if(inet_aton((const char*) hostname, &addrrec.sin_addr.s_addr) == 0){
-        perror("whoopsie");
-        exit(EXIT_FAILURE);
-    }*/
-    //gethostbyname(hostname);
+	addrrec.sin_port = htons(hostUDPport);
+    addrrec.sin_addr.s_addr = inet_addr(hostname);
+	
     cliaddrlen = sizeof(addrrec);
-    for(int i = 0; i < 4; i++){
-        if(sendto(sock, "ABC", 3, 0, (struct sockaddr *) &addrrec, sizeof(addrrec)) < 0){
+    //for(int i = 0; i < 4; i++){
+        if(sendto(sock, hello, 3, 0, (struct sockaddr *) &addrrec, sizeof(addrrec)) < 0){
             perror("Error sending bytes\n");
-            break;
+            //break;
         }
         printf("message sent \n");
-    }
+    //}
 
     printf("Bytes sent: %s", hello);
     close(sock);
@@ -67,15 +63,15 @@ int main(int argc, char** argv) {
     char* filename = NULL;
     
 
-    /*if (argc != 5) {
+    if (argc != 5) {
         fprintf(stderr, "usage: %s receiver_hostname receiver_port filename_to_xfer bytes_to_xfer\n\n", argv[0]);
         exit(1);
     }
     hostUDPport = (unsigned short int) atoi(argv[2]);
     hostname = argv[1];
-    bytesToTransfer = atoll(argv[4]);*/
+    bytesToTransfer = atoll(argv[4]);
 
-    //rsend(hostname, hostUDPport, filename, bytesToTransfer); 
-    rsend("hostname", 0, "filename", 0); 
+    rsend(hostname, hostUDPport, filename, bytesToTransfer); 
+    //rsend("hostname", 0, "filename", 0); 
     return (EXIT_SUCCESS);
 }
