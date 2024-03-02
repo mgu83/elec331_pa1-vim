@@ -3,6 +3,7 @@
         "stdio.h": "c",
         "iostream": "cpp",
         "queue": "cpp",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "chrono": "c"
     }
 }
