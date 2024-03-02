@@ -57,6 +57,7 @@ void rsend(char* hostname,
     struct sockaddr_in receiver_addr;
     int bytesRead, totalBytesSent = 0;
     FILE* file;
+    char *hello = "message to send";
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
@@ -73,10 +74,16 @@ void rsend(char* hostname,
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
+    size_t bytes = strlen(hello) +1;
+    
+    sendto(sockfd, (const char *)hello, bytes,
+		MSG_CONFIRM, (const struct sockaddr *) &other_addr,
+			sizeof(other_addr));
 
     // Control flow here 
-    
+    printf("String sent: %s", hello);
     fclose(file);
+    close(sockfd);
     return;
 
 }
