@@ -10,8 +10,43 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <errno.h>
+#include <math.h>
+
+#include "param.h"
+#include "queue.h"
+
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
 
 #define BUFFER_SIZE 1024
+
+struct sockaddr_in my_addr, other_addr;
+int sockfd, slen;
+
+Queue * backup_queue;
+Queue * first_queue;
+
+// Will probably need some other global variables 
+
+void send_pkt(packet* pkt){
+    printf("Sending packet");
+    sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr));
+}
+
+//TO-DO
+void timeout_handler(){
+    // will need to change ss threshold 
+
+    Queue * tmp_q = backup_queue; 
+    for (int i = 0; i < 32; i++){
+        if (!isEmpty(tmp_q)){
+            packet p = front(tmp_q);
+            send_pkt(&p);
+            dequeue(tmp_q);
+        }
+    }
+}
 
 void rsend(char* hostname, 
             unsigned short int hostUDPport, 
@@ -20,7 +55,6 @@ void rsend(char* hostname,
 {
     int sockfd;
     struct sockaddr_in receiver_addr;
-    char buffer[1024];
     int bytesRead, totalBytesSent = 0;
     FILE* file;
 
@@ -29,11 +63,10 @@ void rsend(char* hostname,
         exit(EXIT_FAILURE);
     }
 
-    memset(&receiver_addr, 0, sizeof(receiver_addr));
-
-    receiver_addr.sin_family = AF_INET;
-    receiver_addr.sin_port = htons(hostUDPport);
-    receiver_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
+    memset((char *) &other_addr, 0, sizeof (other_addr));
+    other_addr.sin_family = AF_INET;
+    other_addr.sin_port = htons(hostUDPport);
+    other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
 
     file = fopen(filename, "rb");
     if (file == NULL) {
@@ -41,15 +74,10 @@ void rsend(char* hostname,
         exit(EXIT_FAILURE);
     }
 
-    while ((bytesRead = fread(buffer, 1, BUFFER_SIZE, file)) > 0 && totalBytesSent < bytesToTransfer) {
-        sendto(sockfd, buffer, bytesRead, 0, (const struct sockaddr*) &receiver_addr, sizeof(receiver_addr));
-         printf("Bytes read: %d\n", bytesRead); 
-        totalBytesSent += bytesRead;
-    }
-    printf("done");
-
+    // Control flow here 
+    
     fclose(file);
-    close(sockfd);
+    return;
 
 }
 

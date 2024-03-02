@@ -25,7 +25,6 @@ void pq_push(PriorityQueue* pq, packet item) {
             exit(EXIT_FAILURE);
         }
     }
-
     // Place the item at the end and heapify-up
     size_t i = pq->size++;
     while (i && item.seq_num < pq->array[(i - 1) / 2].seq_num) {
@@ -71,7 +70,7 @@ int pq_empty(const PriorityQueue *pq) {
 packet pq_top(const PriorityQueue *pq) {
     if (pq_empty(pq)) {
         fprintf(stderr, "Attempt to access top element of an empty priority queue\n");
-        exit(EXIT_FAILURE); // Or handle the error as appropriate for your application
+        exit(EXIT_FAILURE); 
     }
     return pq->array[0];
 }

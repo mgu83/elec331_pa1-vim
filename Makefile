@@ -6,8 +6,8 @@ LINKLIBS = -lpthread
 
 # The components of each program. When you create a src/foo.c source file, add obj/foo.o here, separated
 #by a space (e.g. SOMEOBJECTS = obj/foo.o obj/bar.o obj/baz.o).
-SERVEROBJECTS = obj/receiver.o
-CLIENTOBJECTS = obj/sender.o
+SERVEROBJECTS = obj/receiver.o obj/priorityqueue.o
+CLIENTOBJECTS = obj/sender.o obj/queue.o
 
 #Every rule listed here as .PHONY is "phony": when you say you want that rule satisfied,
 #Make knows not to bother checking whether the file exists, it just runs the recipes regardless.
@@ -20,7 +20,7 @@ CLIENTOBJECTS = obj/sender.o
 #Since 'all' is first in this file, both `make all` and `make` do the same thing.
 #(`make obj server client talker listener` would also have the same effect).
 #all : obj server client talker listener
-all : obj sender receiver
+all : obj sender receiver queue priorityqueue
 
 #$@: name of rule's target: server, client, talker, or listener, for the respective rules.
 #$^: the entire dependency string (after expansions); here, $(SERVEROBJECTS)

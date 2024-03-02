@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "iostream": "cpp",
+        "queue": "cpp",
+        "stdlib.h": "c"
+    }
+}

@@ -11,7 +11,7 @@ typedef struct {
     size_t capacity;  // Current capacity of the array
 } PriorityQueue;
 
-// Function prototypes for priority queue operations
+// TO-DO add function headers
 void pq_init(PriorityQueue* pq);
 void pq_push(PriorityQueue* pq, packet item);
 packet pq_pop(PriorityQueue* pq);
