@@ -23,6 +23,13 @@ typedef struct {
  * @param pq 
  */
 void pq_init(PriorityQueue* pq);
+
+/**
+ * @brief Initializes pq constructor, calls init
+ * 
+ */
+PriorityQueue* constructPQ();
+
 /**
  * @brief Adds packet to existing PriorityQueue
  * 

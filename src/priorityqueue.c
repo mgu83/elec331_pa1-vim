@@ -14,6 +14,18 @@ void pq_init(PriorityQueue* pq) {
     pq->size = 0;
     pq->capacity = INITIAL_SIZE;
 }
+//TODO: Add destructor / free & call at the end of connection
+
+PriorityQueue* constructPQ(){
+    PriorityQueue* newq = (PriorityQueue*)malloc(sizeof(PriorityQueue));
+    if(newq == NULL){
+        perror("Failed to construct pq");
+        exit(EXIT_FAILURE);
+    }
+    pq_init(newq);
+    return newq;
+}
+
 
 void pq_push(PriorityQueue* pq, packet item) {
     // Resize if capacity is reached

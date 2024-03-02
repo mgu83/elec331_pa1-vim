@@ -51,7 +51,9 @@ Queue * first_queue;
  * @param pkt 
  */
 void send_pkt(packet* pkt){
-    sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr));
+    if(sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
+        perror("Error sending bytes..\n");
+    }
 }
 
 /**
