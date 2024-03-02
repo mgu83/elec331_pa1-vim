@@ -22,9 +22,10 @@ void rsend(char* hostname,
 {   
     int sock;
     struct sockaddr_in addrrec; 
-    char *hello = "A";
+    char *hello = "ABC";
+    socklen_t cliaddrlen;
 
-    if(sock = socket(AF_INET, SOCK_DGRAM, 0) < 0){
+    if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
         perror("Failed to open receiver socket.. Exiting..");
         exit(EXIT_FAILURE);
     }
@@ -32,16 +33,18 @@ void rsend(char* hostname,
     memset((char *) &addrrec, 0, sizeof(addrrec));
     addrrec.sin_family = AF_INET;
 	addrrec.sin_port = htons(hostUDPport);
-    addrrec.sin_addr.s_addr = INADDR_ANY;
+    addrrec.sin_addr.s_addr = inet_addr(hostname);
 	/*if(inet_aton((const char*) hostname, &addrrec.sin_addr.s_addr) == 0){
         perror("whoopsie");
         exit(EXIT_FAILURE);
     }*/
     //gethostbyname(hostname);
-
-    sendto(sock, (const char *)hello, strlen(hello),
-		MSG_CONFIRM, (const struct sockaddr *) &addrrec,
-			sizeof(addrrec));
+    cliaddrlen = sizeof(addrrec);
+   if(sendto(sock, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &addrrec, cliaddrlen) < 0){
+        perror("Error sending bytes\n");
+        close(sock);
+        exit(1);
+    }
 
     printf("Bytes sent: %s", hello);
     close(sock);

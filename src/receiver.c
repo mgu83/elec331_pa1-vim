@@ -13,7 +13,7 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 
-#define MAXBYTES 1024
+#define MAXBYTES 16
 
 void rrecv(unsigned short int myUDPport, 
             char* destinationFile, 
@@ -27,6 +27,7 @@ void rrecv(unsigned short int myUDPport,
     int listen_flag = 1;
     //struct sockaddr_storage addr;
     socklen_t slen = sizeof(cliaddr);
+
 
 
     if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
@@ -44,8 +45,9 @@ void rrecv(unsigned short int myUDPport,
 		perror("Failed to bind to socket...");
 		exit(EXIT_FAILURE);
 	}
-    
-    len = recvfrom(sock, buffer, len, 0, &cliaddr, &slen);
+
+    len = recvfrom(sock, buffer, MAXBYTES, 0, &cliaddr, &slen);
+    printf("length of message received: %d \n", len);
     //buffer[len] = '\0';
     /*while(listen_flag){
         struct timeval timeout;
