@@ -1,8 +1,14 @@
-#include <stdio.h>
+/**
+ * @file priorityqueue.c
+ * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
+ * @brief Implementation of priority queue data structure
+ * @bug None
+ * 
+ */
 #include <stdlib.h>
 
 #define INITIAL_SIZE 10
-#include "param.h"
+#include "types.h"
 #include "priorityqueue.h"
 
 void pq_init(PriorityQueue* pq) {
@@ -14,6 +20,18 @@ void pq_init(PriorityQueue* pq) {
     pq->size = 0;
     pq->capacity = INITIAL_SIZE;
 }
+//TODO: Add destructor / free & call at the end of connection
+
+PriorityQueue* constructPQ(){
+    PriorityQueue* newq = (PriorityQueue*)malloc(sizeof(PriorityQueue));
+    if(newq == NULL){
+        perror("Failed to construct pq");
+        exit(EXIT_FAILURE);
+    }
+    pq_init(newq);
+    return newq;
+}
+
 
 void pq_push(PriorityQueue* pq, packet item) {
     // Resize if capacity is reached
@@ -77,12 +95,4 @@ packet pq_top(const PriorityQueue *pq) {
 
 int pq_size(const PriorityQueue *pq) {
     return pq->size;
-}
-
-
-
-void pq_free(PriorityQueue* pq) {
-    free(pq->array);
-    pq->array = NULL;
-    pq->size = pq->capacity = 0;
 }
