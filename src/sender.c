@@ -42,11 +42,24 @@ uint64_t total_num_pkt;
 uint64_t bytes_to_send;
 uint64_t total_sent = 0;
 uint64_t total_received = 0;
+uint64_t highest_received = -1;
 uint64_t total_duplicated = 0;
 float ss_threshold;
 
-Queue * backup_queue;
-Queue * pending_queue;
+/**
+ * @brief This queue acts as a record of all packets that have been sent but not yet acknowledged
+ * It allows the sender to keep track of which packets might need to be retransmitted in case an 
+ * ACK is not received within a certain timeout period or in response to receiving duplicate ACKs.
+ * 
+ */
+Queue * sent_not_ackd;
+/**
+ * @brief This queue is used to manage the current set of packets that are prepared and ready to 
+ * be sent. It is temporary storage for packets that are about to be sent. Once a packet is sent, 
+ * it is removed from this queue but remains in backup_queue until it is acknowledged.
+ * 
+ */
+Queue * ready_to_send;
 
 /**
  * @brief Sends packet across connection
@@ -71,7 +84,7 @@ void queue_send(){
     // Initialize bugger to store file data
     char buffer[MSS];
     packet pkt;
-    int packets_to_send = floor((cong_win_size - size(backup_queue) * MSS) / MSS); // available space / max space per packet
+    int packets_to_send = floor((cong_win_size - size(sent_not_ackd) * MSS) / MSS); // available space / max space per packet
     
     for (int i = 0; i < packets_to_send; i++){
         size_t read_size = fread(buffer, sizeof(char), MIN(bytes_to_send, MSS), file);
@@ -82,20 +95,20 @@ void queue_send(){
             // Copy read data into packet
             memcpy(pkt.data, &buffer, read_size); 
             // Enqueue packet into both queues
-            enqueue(backup_queue, pkt);
-            enqueue(pending_queue, pkt);
+            enqueue(sent_not_ackd, pkt);
+            enqueue(ready_to_send, pkt);
             // Update sequence number and remaining bytes to send
             seq_num += read_size;
             bytes_to_send -= read_size;
         }
     }
     
-    // Send all packets from the first queue
-    while (!isEmpty(pending_queue)){
-        packet p = front(pending_queue);
+    // Send all packets that are ready to be sent
+    while (!isEmpty(ready_to_send)){
+        packet p = front(ready_to_send);
         total_sent++;
         send_pkt(&p);
-        dequeue(pending_queue);
+        dequeue(ready_to_send);
     }
 }
 
@@ -111,7 +124,7 @@ void send_final_ack(){
     pkt.data_size = 0;
     memset(pkt.data, 0, MSS);
     send_pkt(&pkt);
-    while (1){
+    while (1) {
         slen = sizeof(other_addr);
         if (recvfrom(sockfd, temp, sizeof(packet), 0, (struct sockaddr *)&other_addr, (socklen_t*)&slen) == -1){
                 pkt.pkt_type = FIN;
@@ -139,8 +152,8 @@ void rsend(char* hostname,
     total_num_pkt = ceil(1.0 * bytesToTransfer / MSS);
     bytes_to_send = bytesToTransfer;
     packet pkt;
-    backup_queue = constructQueue();
-    pending_queue = constructQueue();
+    sent_not_ackd = constructQueue();
+    ready_to_send = constructQueue();
     
     printf("Inside rsend\n");
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -168,34 +181,38 @@ void rsend(char* hostname,
         slen = sizeof(other_addr);
         if (recvfrom(sockfd, &pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1) {
             printf("error in recvfrom");
-            if (!isEmpty(backup_queue)) {
-                // Reset everything 
+            // Restransmit everything in sent_not_ackd queue BUT DO NOT ERASE ANYTHING FROM IT
+            if (!isEmpty(sent_not_ackd)) {
+                Queue* tosend = sent_not_ackd;
+                while (!isEmpty(tosend)) {
+                    packet pk = front(tosend);
+                    send_pkt(&pk);
+                    dequeue(tosend);
+                }
                 ss_threshold = MAX(2 * MSS, cong_win_size / 2);
                 cong_win_size = MSS;
                 status = SLOW_START;
             }
         }
         if (pkt.pkt_type == ACK){
-            // Stale ACK
-            if (pkt.ack_num < front(backup_queue).seq_num){
-                return;
-            }
-            // Is this a ACK we have received? Duplicated
-            else if (pkt.ack_num == front(backup_queue).seq_num){
-                total_duplicated++;
-            }
             // New ACK
-            else {
+            if (pkt.ack_num > front(sent_not_ackd).seq_num){
+                highest_received = pkt.ack_num;
                 total_duplicated = 0;
-                int num_pkt = ceil((pkt.ack_num - front(backup_queue).seq_num) / (1.0 * MSS));
+                int num_pkt = ceil((pkt.ack_num - front(sent_not_ackd).seq_num) / (1.0 * MSS));
                 int count = 0;
                 total_received += num_pkt;
-                while(!isEmpty(backup_queue) && count < num_pkt){
-                    printf("Received ACK for packet %d \n", (front(backup_queue).seq_num)/MSS);
-                    dequeue(backup_queue);
+                while(!isEmpty(sent_not_ackd) && count < num_pkt){
+                    printf("Received ACK for packet %d \n", (front(sent_not_ackd).seq_num)/MSS);
+                    dequeue(sent_not_ackd);
                     count++;
                 }
                 queue_send();
+            } else if (pkt.ack_num == front(sent_not_ackd).seq_num){ // Is this a ACK we have received? Duplicated
+                total_duplicated++;
+                cong_win_size = MAX(cong_win_size / 2, 1 * MSS); // Ensure window size doesn't fall below 1 MSS
+                ss_threshold = cong_win_size;
+                status = FAST_RETRANSMIT; // TO-DO: we need to deal with being in FAST_RETRANSMIT
             }
         }
     }
