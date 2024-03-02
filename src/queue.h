@@ -33,6 +33,7 @@ typedef struct {
  * @param q 
  */
 void initializeQueue(Queue* q);
+Queue* constructQueue();
 /**
  * @brief Adds item to existing queue
  * 

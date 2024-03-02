@@ -59,15 +59,21 @@ void send_pkt(packet* pkt){
  * 
  */
 void queue_send(){
+    printf("Inside queue_send()\n");
     // Check if there is anything to send
     if (bytes_to_send == 0){
         return;
     }
+    printf("after condition check\n");
     // Initialize bugger to store file data
     char buffer[MSS];
+    
     packet pkt;
+    
     int packets_to_send = floor((cong_win_size - size(backup_queue) * MSS) / MSS); // available space / max space per packet
+    printf("after pack to send init\n");
     for (int i = 0; i < packets_to_send; i++){
+        
         size_t read_size = fread(buffer, sizeof(char), MIN(bytes_to_send, MSS), file);
         if (read_size > 0){
             pkt.pkt_type = DATA;
@@ -83,6 +89,7 @@ void queue_send(){
             bytes_to_send -= read_size;
         }
     }
+    printf("After forloop\n");
     // Send all packets from the first queue
     while (!isEmpty(first_queue)){
         packet p = front(first_queue);
@@ -156,7 +163,8 @@ void rsend(char* hostname,
             unsigned short int hostUDPport, 
             char* filename, 
             unsigned long long int bytesToTransfer) {
-
+    
+    printf("Inside rsend\n");
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
@@ -166,13 +174,14 @@ void rsend(char* hostname,
     other_addr.sin_family = AF_INET;
     other_addr.sin_port = htons(hostUDPport);
     other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
-
+    printf("After memset\n");
     file = fopen(filename, "rb");
     if (file == NULL) {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
 
+    printf("File opened\n");
     // Initialize variables
     total_num_pkt = ceil(1.0 * bytesToTransfer / MSS);
     bytes_to_send = bytesToTransfer;
@@ -182,7 +191,11 @@ void rsend(char* hostname,
     total_duplicated = 0;
     status = SLOW_START;
     packet pkt;
+    backup_queue = constructQueue();
+    first_queue = constructQueue();
+
     queue_send();
+    printf("Queue sent\n");
     while (total_sent < total_num_pkt || total_received < total_num_pkt){
         if (pkt.pkt_type == ACK){
             handle_ack(&pkt);

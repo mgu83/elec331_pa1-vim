@@ -17,6 +17,12 @@ void initializeQueue(Queue* q) {
     q->size = 0;
 }
 
+Queue* constructQueue(){
+    Queue* newq = (Queue*)malloc(sizeof(Queue));
+    initializeQueue(newq);
+    return newq;
+}
+
 int isEmpty(const Queue* q) {
     return q->front == NULL;
 }
