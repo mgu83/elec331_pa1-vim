@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#include "param.h"
+#include "types.h"
 
 /**
  * @brief Structure to help managed packets coming to 

@@ -24,7 +24,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 
-#include "param.h"
+#include "types.h"
 #include "priorityqueue.h"
 
 struct sockaddr_in my_addr, si_other;
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc != 4) {
+    if (argc != 3) {
         fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);

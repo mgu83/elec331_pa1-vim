@@ -2,7 +2,7 @@
 #define QUEUE_H
 
 #include <stdlib.h>
-#include "param.h"
+#include "types.h"
 
 /**
  * @brief Data structure for Queue component

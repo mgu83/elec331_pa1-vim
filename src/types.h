@@ -1,5 +1,5 @@
 /**
- * @file param.h
+ * @file types.h
  * @author Maggie Gu (@mgu83)
  * @brief Data structure for TCP
  */
@@ -10,8 +10,6 @@
 #include <stdio.h>
 
 #define MSS             512 // Maximum Segment Size
-#define AMPLIFIER       256 // Amplify the ssthreash by this factor
-#define INIT_SST_AMP    512 // Initial ssthreash is this factor times the MSS
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
 
@@ -34,12 +32,12 @@ typedef enum packet_type{
  * Details listed in course textbook 
  * 
  */
-typedef enum status_type {
-    SLOW_START = 5,
+typedef enum state_type {
+    SLOW_START,
     CONGESTION_AVOIDANCE,
     FAST_RETRANSMIT,
     FAST_RECOVERY
-} status_type;
+} state_type;
 
 /**
  * @brief Represents a TCP packet

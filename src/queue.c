@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "param.h"
+#include "types.h"
 #include "queue.h"
 
 // Function prototypes

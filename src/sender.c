@@ -17,7 +17,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <math.h>
-#include "param.h"
+#include "types.h"
 #include "queue.h"
 
 /**
@@ -35,17 +35,18 @@ int sockfd;
 socklen_t slen;
 FILE* file;
 FILE* send_file;
-uint64_t seq_num;
-status_type status;
+uint64_t seq_num = 0;
+state_type status = SLOW_START;
 float cong_win_size = MSS;
 uint64_t total_num_pkt;
 uint64_t bytes_to_send;
-uint64_t total_sent;
-uint64_t total_received;
-uint64_t total_duplicated;
+uint64_t total_sent = 0;
+uint64_t total_received = 0;
+uint64_t total_duplicated = 0;
+float ss_threshold;
 
 Queue * backup_queue;
-Queue * first_queue;
+Queue * pending_queue;
 
 /**
  * @brief Sends packet across connection
@@ -69,14 +70,10 @@ void queue_send(){
     }
     // Initialize bugger to store file data
     char buffer[MSS];
-    
     packet pkt;
-    
     int packets_to_send = floor((cong_win_size - size(backup_queue) * MSS) / MSS); // available space / max space per packet
     
-    
     for (int i = 0; i < packets_to_send; i++){
-        
         size_t read_size = fread(buffer, sizeof(char), MIN(bytes_to_send, MSS), file);
         if (read_size > 0){
             pkt.pkt_type = DATA;
@@ -86,7 +83,7 @@ void queue_send(){
             memcpy(pkt.data, &buffer, read_size); 
             // Enqueue packet into both queues
             enqueue(backup_queue, pkt);
-            enqueue(first_queue, pkt);
+            enqueue(pending_queue, pkt);
             // Update sequence number and remaining bytes to send
             seq_num += read_size;
             bytes_to_send -= read_size;
@@ -94,40 +91,11 @@ void queue_send(){
     }
     
     // Send all packets from the first queue
-    while (!isEmpty(first_queue)){
-        packet p = front(first_queue);
-        send_pkt(&p);
+    while (!isEmpty(pending_queue)){
+        packet p = front(pending_queue);
         total_sent++;
-        dequeue(first_queue);
-    }
-}
-
-/**
- * @brief Handle and deal with incoming acknowledgements from receiver
- * 
- * @param pkt 
- */
-void handle_ack(packet* pkt){
-    if (pkt->ack_num < front(backup_queue).seq_num){
-        // Stale ACK
-        return;
-    }
-    else if (pkt->ack_num == front(backup_queue).seq_num){
-        // Duplicate ACK
-        total_duplicated++;
-    }
-    else{
-        // New ACK
-        total_duplicated = 0;
-        int num_pkt = ceil((pkt->ack_num - front(backup_queue).seq_num) / (1.0 * MSS));
-        int count = 0;
-        total_received += num_pkt;
-        while(!isEmpty(backup_queue) && count < num_pkt){
-            printf("Received ACK for packet %d \n", (front(backup_queue).seq_num)/MSS);
-            dequeue(backup_queue);
-            count++;
-        }
-        queue_send();
+        send_pkt(&p);
+        dequeue(pending_queue);
     }
 }
 
@@ -135,7 +103,7 @@ void handle_ack(packet* pkt){
  * @brief Sends final acknowledgment package before connection terminates
  * 
  */
-void end_connection(){
+void send_final_ack(){
     char temp[sizeof(packet)];
     packet pkt;
     packet ack;
@@ -167,6 +135,12 @@ void rsend(char* hostname,
             unsigned short int hostUDPport, 
             char* filename, 
             unsigned long long int bytesToTransfer) {
+
+    total_num_pkt = ceil(1.0 * bytesToTransfer / MSS);
+    bytes_to_send = bytesToTransfer;
+    packet pkt;
+    backup_queue = constructQueue();
+    pending_queue = constructQueue();
     
     printf("Inside rsend\n");
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -187,18 +161,6 @@ void rsend(char* hostname,
     }
 
     printf("File opened\n");
-    // Initialize variables
-    total_num_pkt = ceil(1.0 * bytesToTransfer / MSS);
-    bytes_to_send = bytesToTransfer;
-    seq_num = 0;
-    total_sent = 0;
-    total_received = 0;
-    total_duplicated = 0;
-    status = SLOW_START;
-    packet pkt;
-    backup_queue = constructQueue();
-    first_queue = constructQueue();
-
     queue_send();
     printf("Queue sent\n");
     while (total_sent < total_num_pkt || total_received < total_num_pkt){
@@ -206,14 +168,39 @@ void rsend(char* hostname,
         slen = sizeof(other_addr);
         if (recvfrom(sockfd, &pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1) {
             printf("error in recvfrom");
+            if (!isEmpty(backup_queue)) {
+                // Reset everything 
+                ss_threshold = MAX(2 * MSS, cong_win_size / 2);
+                cong_win_size = MSS;
+                status = SLOW_START;
+            }
         }
-
         if (pkt.pkt_type == ACK){
-            handle_ack(&pkt);
+            // Stale ACK
+            if (pkt.ack_num < front(backup_queue).seq_num){
+                return;
+            }
+            // Is this a ACK we have received? Duplicated
+            else if (pkt.ack_num == front(backup_queue).seq_num){
+                total_duplicated++;
+            }
+            // New ACK
+            else {
+                total_duplicated = 0;
+                int num_pkt = ceil((pkt.ack_num - front(backup_queue).seq_num) / (1.0 * MSS));
+                int count = 0;
+                total_received += num_pkt;
+                while(!isEmpty(backup_queue) && count < num_pkt){
+                    printf("Received ACK for packet %d \n", (front(backup_queue).seq_num)/MSS);
+                    dequeue(backup_queue);
+                    count++;
+                }
+                queue_send();
+            }
         }
     }
     printf("All ACKs received\n");
-    end_connection();
+    send_final_ack();
     fclose(file);
 }
 

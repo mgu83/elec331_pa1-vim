@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #define INITIAL_SIZE 10
-#include "param.h"
+#include "types.h"
 #include "priorityqueue.h"
 
 void pq_init(PriorityQueue* pq) {
