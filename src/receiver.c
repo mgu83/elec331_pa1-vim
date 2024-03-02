@@ -27,7 +27,7 @@
 #include "types.h"
 #include "priorityqueue.h"
 
-struct sockaddr_in my_addr, si_other;
+struct sockaddr_in my_addr, other_addr;
 int sockfd, slen;
 int write_flag = 1;
 socklen_t len;
@@ -39,7 +39,7 @@ void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
-    if (sendto(sockfd, &ack, sizeof(packet), 0, (struct sockaddr*) &si_other, len) == -1) {
+    if (sendto(sockfd, &ack, sizeof(packet), 0, (struct sockaddr*) &other_addr, len) == -1) {
         perror("error in sending acknowledgement\n");
 
     }
@@ -79,8 +79,8 @@ void rrecv(unsigned short int myUDPport,
       packet recv_pkt;
       
       // Receiving the packet
-      len = sizeof(si_other);
-      if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&si_other, (socklen_t*)&len) == -1) {
+      len = sizeof(other_addr);
+      if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&len) == -1) {
         printf("error in recvfrom");
       }
       
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc != 3) {
+    if (argc != 4) {
         fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
