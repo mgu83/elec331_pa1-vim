@@ -3,7 +3,6 @@
 #include "param.h"
 #include "queue.h"
 
-
 // Function prototypes
 void initializeQueue(Queue* q);
 void enqueue(Queue* q, packet item);
@@ -13,23 +12,19 @@ packet back(const Queue* q);
 int isEmpty(const Queue* q);
 size_t size(const Queue* q);
 
-// Initialize the queue
 void initializeQueue(Queue* q) {
     q->front = q->rear = NULL;
     q->size = 0;
 }
 
-// Check if the queue is empty
 int isEmpty(const Queue* q) {
     return q->front == NULL;
 }
 
-// Get the size of the queue
 size_t size(const Queue* q) {
     return q->size;
 }
 
-// Add an item to the queue
 void enqueue(Queue* q, packet item) {
     QueueNode* newNode = (QueueNode*)malloc(sizeof(QueueNode));
     if (newNode == NULL) {
@@ -48,7 +43,6 @@ void enqueue(Queue* q, packet item) {
     q->size++;
 }
 
-// Remove an item from the queue
 packet dequeue(Queue* q) {
     packet item;
     if (isEmpty(q)) {
@@ -67,21 +61,19 @@ packet dequeue(Queue* q) {
     return item;
 }
 
-// Get the front item of the queue
 packet front(const Queue* q) {
     if (isEmpty(q)) {
         printf("Queue is empty\n");
-        packet empty; // Should ideally handle this case better
+        packet empty; 
         return empty;
     }
     return q->front->data;
 }
 
-// Get the back item of the queue
 packet back(const Queue* q) {
     if (isEmpty(q)) {
         printf("Queue is empty\n");
-        packet empty; // Should ideally handle this case better
+        packet empty; 
         return empty;
     }
     return q->rear->data;

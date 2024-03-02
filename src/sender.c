@@ -1,3 +1,10 @@
+/**
+ * @file sender.c
+ * @author Maggie Gu (@mgu83)
+ * @brief 
+ * 
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,9 +20,14 @@
 #include "param.h"
 #include "queue.h"
 
+/**
+ * @brief MAX & MIN macros since C does not have built in
+ * 
+ */
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
+// BUFFER SIZE can be changed
 #define BUFFER_SIZE 1024
 
 struct sockaddr_in my_addr, other_addr;
@@ -33,10 +45,19 @@ uint64_t total_duplicated;
 Queue * backup_queue;
 Queue * first_queue;
 
+/**
+ * @brief Sends packet across connection
+ * 
+ * @param pkt 
+ */
 void send_pkt(packet* pkt){
     sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr));
 }
 
+/**
+ * @brief Add packets to queues and then calls send_pkt
+ * 
+ */
 void queue_send(){
     // Check if there is anything to send
     if (bytes_to_send == 0){
@@ -71,6 +92,11 @@ void queue_send(){
     }
 }
 
+/**
+ * @brief Handle and deal with incoming acknowledgements from receiver
+ * 
+ * @param pkt 
+ */
 void handle_ack(packet* pkt){
     if (pkt->ack_num < front(backup_queue).seq_num){
         // Stale ACK
@@ -94,6 +120,10 @@ void handle_ack(packet* pkt){
     }
 }
 
+/**
+ * @brief Sends final acknowledgment package before connection terminates
+ * 
+ */
 void end_connection(){
     char temp[sizeof(packet)];
     packet pkt;
@@ -143,7 +173,7 @@ void rsend(char* hostname,
         exit(EXIT_FAILURE);
     }
 
-    // Initialize packet variables
+    // Initialize variables
     total_num_pkt = ceil(1.0 * bytesToTransfer / MSS);
     bytes_to_send = bytesToTransfer;
     seq_num = 0;

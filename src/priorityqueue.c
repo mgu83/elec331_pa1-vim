@@ -78,11 +78,3 @@ packet pq_top(const PriorityQueue *pq) {
 int pq_size(const PriorityQueue *pq) {
     return pq->size;
 }
-
-
-
-void pq_free(PriorityQueue* pq) {
-    free(pq->array);
-    pq->array = NULL;
-    pq->size = pq->capacity = 0;
-}
