@@ -1,6 +1,6 @@
 /**
  * @file types.h
- * @author Maggie Gu (@mgu83)
+ * @author Maggie Gu (@mgu83) Vi Kankanamge (@vidunikankan)
  * @brief Data structure for TCP
  */
 #ifndef PARAM_H
@@ -12,6 +12,7 @@
 #define MSS             512 // Maximum Segment Size
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
+#define BUF_SIZE_MAX    16348
 
 /**
  * @brief Types of TCP packets - meant to substitute for flags
@@ -24,7 +25,8 @@ typedef enum packet_type{
     DATA,
     ACK,
     FIN,
-    FINACK
+    FINACK,
+    TDACK
 } packet_type;
 
 /**
@@ -34,9 +36,8 @@ typedef enum packet_type{
  */
 typedef enum state_type {
     SLOW_START,
-    CONGESTION_AVOIDANCE,
-    FAST_RETRANSMIT,
-    FAST_RECOVERY
+    CONG_AVOID,
+    SLOW_RETRANS
 } state_type;
 
 /**
@@ -48,7 +49,7 @@ typedef struct  {
     uint64_t 	seq_num;
     uint64_t    ack_num;
 	int 	    data_size;
-	char        data[MSS];
+	char        data[BUF_SIZE_MAX];
 } packet;
 
 #endif
