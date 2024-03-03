@@ -117,16 +117,15 @@ void rrecv(unsigned short int myUDPport,
           printf("FIN packet has been received");
           // If so, send acknowledgement that we have received last packet
           send_ack(ack_num, FINACK);
-          int size_count = 0;
-            while (!pq_empty(pq) &&  (pq_top(pq).seq_num == ack_num)){
-                printf("empty?");
-                packet pkt = pq_top(pq);
-                if(fwrite(pkt.data, sizeof(char), pkt.data_size, file) < 0){
-                    perror("Write to file failed\n");
-                }
-                size_count += pkt.data_size;
-                pq_pop(pq);
-            }
+        //   int size_count = 0;
+        //     while (!pq_empty(pq) &&  size_count < ack_num){
+        //         packet pkt = pq_top(pq);
+        //         if(fwrite(pkt.data, sizeof(char), pkt.data_size, file) < 0){
+        //             perror("Write to file failed\n");
+        //         }
+        //         size_count += pkt.data_size;
+        //         pq_pop(pq);
+        //     }
           break;
           
       }
@@ -143,7 +142,7 @@ void rrecv(unsigned short int myUDPport,
             ack_num += recv_pkt.data_size;
             printf("data received: %d\n", recv_pkt.data_size);
 
-            /*if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
+            if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
             }
             ack_num += recv_pkt.data_size;
@@ -153,7 +152,7 @@ void rrecv(unsigned short int myUDPport,
                 fwrite(pkt.data, sizeof(char), pkt.data_size, file);
                 ack_num += pkt.data_size;
                 pq_pop(pq);
-            }*/
+            }
             send_ack(ack_num, ACK);
         }
         // Send acknowledgment to the sender that packet has been received 
