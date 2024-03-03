@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MSS             64 // Maximum Segment Size
+#define MSS             512 // Maximum Segment Size
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
 #define BUF_SIZE_MAX    32768
@@ -49,7 +49,7 @@ typedef struct  {
     uint64_t 	seq_num;
     uint64_t    ack_num;
 	int 	    data_size;
-	char        data[BUF_SIZE_MAX];
+	char        data[MSS];
 } packet;
 
 #endif
