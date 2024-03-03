@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <assert.h>
 
 #include "types.h"
 #include "priorityqueue.h"
@@ -38,6 +39,7 @@ struct sockaddr_in my_addr, other_addr;
 int sockfd, slen;
 int write_flag = 1;
 socklen_t len;
+FILE* rec_file;
 
 /**
  * @brief Priority queue for managing the packets received out of order.
@@ -82,7 +84,7 @@ void rrecv(unsigned short int myUDPport,
     struct timespec reqDelay;
     pq = constructPQ();
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket creation failed");
+        perror("socket creation failed\n");
         exit(EXIT_FAILURE);
     }
     memset(&my_addr, 0, sizeof(my_addr));
@@ -90,12 +92,12 @@ void rrecv(unsigned short int myUDPport,
     my_addr.sin_port = htons(myUDPport);
     my_addr.sin_addr.s_addr = INADDR_ANY;
     if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
-        perror("bind failed");
+        perror("bind failed\n");
         exit(EXIT_FAILURE);
     }
     file = fopen(destinationFile, "wb");
     if (file == NULL) {
-        perror("Failed to open file");
+        perror("Failed to open file\n");
         exit(EXIT_FAILURE);
     }
     while (write_flag) {
