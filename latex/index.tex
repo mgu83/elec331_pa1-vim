@@ -5,8 +5,8 @@ This project implements a custom UDP-\/based file transfer protocol consisting o
 To compile the code, use \textquotesingle{}make clean\textquotesingle{} and \textquotesingle{}make\textquotesingle{}. To execute receiver, use \textquotesingle{}./receiver \mbox{[}unsigned short int my\+UDPport\mbox{]} \mbox{[}char \texorpdfstring{$\ast$}{*}destination\+File\mbox{]} \mbox{[}unsigned long long int write\+Rate\mbox{]}\textquotesingle{}. To execute sender, use \textquotesingle{}./sender \mbox{[}char \texorpdfstring{$\ast$}{*}hostname\mbox{]} \mbox{[}unsigned short int host\+UDPport\mbox{]} \mbox{[}char \texorpdfstring{$\ast$}{*}filename\mbox{]} \mbox{[}unsigned long long int bytes\+To\+Transfer (optional)\mbox{]}\textquotesingle{}.\hypertarget{index_Authors}{}\doxysection{\texorpdfstring{Authors}{Authors}}\label{index_Authors}
 
 \begin{DoxyItemize}
-\item Maggie Gu (@mgu83)
-\item Vi Kankanamge (@vidunikankan)
+\item Maggie Gu (mgu83)
+\item Vi Kankanamge (vidunikankan)
 \end{DoxyItemize}\hypertarget{index_Implementation}{}\doxysection{\texorpdfstring{Highlights}{Highlights}}\label{index_Implementation}
 Priority Queue\+: Manages out-\/of-\/order packets on the receiver side, ensuring data integrity. Dynamic Congestion Window\+: Optimizes data flow based on network conditions, implemented in the sender module. Uses slow start and AIMD protocols to optimize throughput while maintaining fairness. State Machine\+: Governs the sender\textquotesingle{}s behavior, transitioning between slow start, congestion avoidance, and fast recovery. Queues\+: Used two queues to keep track of packets on sender side. See below.
 \begin{DoxyItemize}
