@@ -4,6 +4,8 @@
         "iostream": "cpp",
         "queue": "cpp",
         "stdlib.h": "c",
-        "chrono": "c"
-    }
+        "chrono": "c",
+        "doxygen.doxyfilePath": "${workspaceFolder}/Doxyfile"
+    },
+    
 }
