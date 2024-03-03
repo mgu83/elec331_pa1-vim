@@ -10,7 +10,6 @@
 #define PRIORITY_QUEUE_H
 
 #include <stdlib.h>
-
 #include "types.h"
 
 /**
