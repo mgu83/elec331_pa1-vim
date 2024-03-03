@@ -40,19 +40,12 @@ state_type status = SLOW_START;
 float cong_win_size = MSS;
 uint64_t total_num_pkt;
 uint64_t bytes_to_send;
-uint64_t bytes_to_send_total;
 uint64_t total_sent = 0;
 uint64_t total_received = 0;
 uint64_t highest_received = -1;
 uint64_t total_duplicated = 0;
 float ss_threshold;
-uint64_t prev_mss, cur_mss = MSS;
-uint64_t cwnd = MSS;
-uint64_t ssthresh = 128*MSS;
-uint64_t bytes_sent_and_ackd = 0;
-uint64_t packet_seq_num = 0;
-state_type state;
-int retransmit_flag = 0;
+
 /**
  * @brief This queue acts as a record of all packets that have been sent but not yet acknowledged
  * It allows the sender to keep track of which packets might need to be retransmitted in case an 
@@ -74,15 +67,9 @@ Queue * ready_to_send;
  * @param pkt 
  */
 void send_pkt(packet* pkt){
-    printf("in send_pkt\n");
-    /*int buf_size = sizeof(pkt);
-    if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
-        perror("Error setting send buffer size");
-    }*/
-    if(sendto(sockfd, pkt, sizeof(pkt), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
+    if(sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent data successfully: %d\n", pkt->data_size);
 }
 
 /**
@@ -124,134 +111,6 @@ void queue_send(){
         dequeue(ready_to_send);
     }
 }
-
-
-void create_send_pkt(){
-    printf("inside create send pkt\n");
-    int pkts_to_send = floor((bytes_to_send - bytes_sent_and_ackd)/cwnd);
-    char buffer[cwnd];
-    int bytes_read;
-    packet ss_pkt;
-
-    if(fseek(file, bytes_sent_and_ackd, SEEK_SET) != 0){
-        perror("Fseek failed in slow start state\n");
-    }
-    printf("after fseek\n");
-    bytes_read = fread(buffer, sizeof(char), MIN(bytes_to_send, cwnd), file);
-    if(bytes_read != MIN(bytes_to_send, cwnd)){
-        perror("Fread failed in slow start\n");
-    }
-    printf("after file read\n");
-    ss_pkt.pkt_type = DATA;
-    ss_pkt.data_size = bytes_read;
-    ss_pkt.seq_num = packet_seq_num;
-    printf("Size of message: %d\n", sizeof(packet));
-    memcpy(ss_pkt.data, &buffer, bytes_read);
-    printf("after memcpy\n");
-    if(!retransmit_flag){
-        packet_seq_num += bytes_read; 
-    }
-    send_pkt(&ss_pkt);
-
-}
-
-void check_ack(){
-    packet ackpkt;
-   /* struct timeval tv;
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
-    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0){
-        perror("Error setting recv timeout\n");
-
-    }*/
-    while(bytes_sent_and_ackd < packet_seq_num){
-        printf("Waiting for ACK\n");
-        int buf_size = sizeof(packet);
-        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
-            perror("Error setting send buffer size");
-        }
-        if (recvfrom(sockfd, &ackpkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1){
-            //Timeout case
-            perror("Error receiving ack\n");
-            /*switch(state){
-                case CONG_AVOID:
-                    cwnd = MSS;
-                    state = SLOW_START;
-                    break;
-                default:
-                    printf("Packet timed out in state %d\n:", state);
-                    break;
-            }*/
-
-        }
-        if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){
-            bytes_sent_and_ackd += packet_seq_num;
-            bytes_to_send -= packet_seq_num;
-            switch(state){
-                case SLOW_START:
-                    if((cwnd*2) > ssthresh){
-                        state = CONG_AVOID;
-                    } else {
-                        state = SLOW_START;
-                    }
-                    break;
-                case SLOW_RETRANS:
-                    state = SLOW_START;
-                    retransmit_flag = 0;
-                    break;
-                default:
-                    break;
-            }
-
-        } else if(ackpkt.pkt_type == TDACK){
-            switch(state){
-                case SLOW_START:
-                    state = SLOW_RETRANS;
-                    break;
-                case CONG_AVOID:
-                    ssthresh = floor(cwnd/2); //should this actually be floor?
-                    cwnd = MSS;
-                    state = SLOW_START;
-                    break;
-                default:
-                    break;
-            }
-            break;  
-        }
-
-    }
-}
-
-/**
- * @brief Dynamic packet schduling function (slow start, congestion avoidance, etc.)
- * 
- */
-void dyn_pkts(){
-    while(bytes_sent_and_ackd < bytes_to_send_total){
-        printf("Inside dynamic pkt func\n");
-        switch(state){
-            case SLOW_START:
-                cwnd *= 2;
-                create_send_pkt();
-                check_ack();
-                break;
-            case CONG_AVOID:
-                cwnd += MSS;
-                create_send_pkt();
-                check_ack();
-                break;
-
-            case SLOW_RETRANS:
-                retransmit_flag = 1;
-                create_send_pkt();
-                check_ack();
-                break;
-
-        }
-
-    }
-}
-
 
 /**
  * @brief Sends final acknowledgment package before connection terminates
@@ -323,17 +182,7 @@ void rsend(char* hostname,
     }
 
     printf("File opened\n");
-    bytes_sent_and_ackd = 0;
-    bytes_to_send = bytesToTransfer;
-    bytes_to_send_total = bytesToTransfer;
-    state = SLOW_START;
-    cur_mss = MSS;
-    dyn_pkts();
-    printf("All ACKs received\n");
-    send_final_ack();
-    fclose(file);
-
-    /*queue_send();
+    queue_send();
     printf("Queue sent\n");
     while (total_sent < total_num_pkt || total_received < total_num_pkt){
         printf("Waiting for ACKs\n");
@@ -371,10 +220,13 @@ void rsend(char* hostname,
                 total_duplicated++;
                 cong_win_size = MAX(cong_win_size / 2, 1 * MSS); // Ensure window size doesn't fall below 1 MSS
                 ss_threshold = cong_win_size;
-                status = FAST_RETRANSMIT; // TO-DO: we need to deal with being in FAST_RETRANSMIT
+               // status = FAST_RETRANSMIT; // TO-DO: we need to deal with being in FAST_RETRANSMIT
             }
         }
-    }*/
+    }
+    printf("All ACKs received\n");
+    send_final_ack();
+    fclose(file);
 }
 
 int main(int argc, char** argv) {
