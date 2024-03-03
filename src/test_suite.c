@@ -35,44 +35,118 @@ int compare_files(const char *file1, const char *file2)
 }
 
 /**
+ * @brief Create a large test file object
+ *
+ * @param filename
+ * @param size
+ */
+void create_large_test_file(const char *filename, size_t size)
+{
+    FILE *file = fopen(filename, "w");
+    if (!file)
+    {
+        perror("Failed to open file for writing");
+        exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        fputc('A' + (i % 26), file); // Cycle through 'A' to 'Z'
+    }
+
+    fclose(file);
+}
+
+/**
  * Test for transferring and verifying a simple text file.
  */
 void test_transfer_simple_file()
 {
     printf("Starting simple file transfer test...\n");
 
-    // Assuming the receiver and sender are compiled as receiver and sender respectively.
-    // Start receiver in the background
     if (fork() == 0)
     {
-        execl("./receiver", "receiver", "12345", "received.txt", "0");
-        exit(EXIT_FAILURE); // execl only returns on error
+        execl("./receiver", "receiver", "12345", "./testfiles/test1_dest.txt", "0");
+        exit(EXIT_FAILURE);
     }
 
-    // Give the receiver a moment to start up
     sleep(1);
 
-    // Start sender
-    execute_command("./sender 127.0.0.1 12345 testfile.txt 10");
+    execute_command("./sender 127.0.0.1 12345 ./testfiles/test1_start.txt 10");
 
-    // Wait for the receiver to finish
     wait(NULL);
 
-    // Compare the original file with the received file
-    if (compare_files("testfile.txt", "received.txt"))
+    if (compare_files("./testfiles/test1_dest.txt", "./testfiles/test1_start.txt"))
     {
-        printf("Simple file transfer test passed.\n");
+        printf("Test 1 passed.\n");
     }
     else
     {
-        printf("Simple file transfer test failed.\n");
+        printf("Test 1 failed.\n");
+    }
+}
+
+/**
+ * @brief Test for verifying single packet transfer
+ *
+ */
+void test_single_packet_transfer()
+{
+    if (fork() == 0)
+    {
+        execl("./receiver", "receiver", "12345", "./testfiles/test2_dest.txt", "0");
+        exit(EXIT_FAILURE); // execl only returns on error
+    }
+
+    sleep(1);
+
+    execute_command("./sender 127.0.0.1 12345 ./testfiles/test2_start.txt 10");
+    sleep(1);
+
+    FILE *received_file = fopen("./testfile/test2_dest.txt", "r");
+    if (compare_files("./testfiles/test2_dest.txt", "./testfile/test2_start.txt"))
+    {
+        printf("Test 2 passed.\n");
+    }
+    else
+    {
+        printf("Test 2 failed.\n");
+    }
+}
+
+/**
+ * @brief Test for verifying multiple packet transfer
+ *
+ */
+void test_transfer_large_file()
+{
+    if (fork() == 0)
+    {
+        execl("./receiver", "receiver", "12345", "./testfiles/test3_dest.txt", "0");
+        exit(EXIT_FAILURE); // execl only returns on error
+    }
+
+    sleep(1);
+
+    execute_command("./sender 127.0.0.1 12345 ./testfiles/test3_start.txt 10");
+    sleep(1);
+
+    FILE *received_file = fopen("./testfile/test3_dest.txt", "r");
+    if (compare_files("./testfiles/test3_dest.txt", "./testfiles/test3_start.txt"))
+    {
+        printf("Test 3 passed.\n");
+    }
+    else
+    {
+        printf("Test 3 failed.\n");
     }
 }
 
 int main()
 {
     test_transfer_simple_file();
-    // Add more test calls here
+    test_single_packet_transfer();
+    test_transfer_large_file();
 
     return 0;
 }

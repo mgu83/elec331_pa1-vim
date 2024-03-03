@@ -168,8 +168,7 @@ int main(int argc, char **argv)
     // command line.
 
     unsigned short int udpPort;
-    // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc != 4)
+    if (argc < 3 || argc > 4)
     {
         fprintf(stderr, "There are %d arguments.\n", argc - 1);
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
@@ -183,36 +182,6 @@ int main(int argc, char **argv)
         writeRate = atoll(argv[3]);
     }
     rrecv(udpPort, destinationFile, writeRate);
-
-    // rec_file = fopen(destinationFile, "rb");
-    // if (rec_file == NULL)
-    // {
-    //     perror("Failed to open file");
-    //     exit(EXIT_FAILURE);
-    // }
-    // for (int i = 65; i < 91; i++)
-    // {
-    //     char c = (char)i;
-    //     for (int j = 0; j < 5 * MSS; j++)
-    //     {
-    //         char d;
-    //         if (fseek(rec_file, (i - 65) * (5 * MSS) + j, SEEK_SET) != 0)
-    //         {
-    //             perror("Fseek failed in slow start state\n");
-    //         }
-
-    //         if (fread(&d, sizeof(char), 1, rec_file) < 0)
-    //         {
-    //             perror("error writing to file\n");
-    //         }
-
-    //         if (!(d == c))
-    //         {
-    //             printf("Test failed: expected %s, read %s\n", c, d);
-    //         }
-    //     }
-    // }
-    printf("Test 1 passed!\n");
 
     return EXIT_SUCCESS;
 }
