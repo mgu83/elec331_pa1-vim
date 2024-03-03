@@ -118,7 +118,8 @@ void rrecv(unsigned short int myUDPport,
           // If so, send acknowledgement that we have received last packet
           send_ack(ack_num, FINACK);
           int size_count = 0;
-            while (!pq_empty(pq) &&  size_count < ack_num){
+            while (!pq_empty(pq) &&  (pq_top(pq).seq_num == ack_num)){
+                printf("empty?");
                 packet pkt = pq_top(pq);
                 if(fwrite(pkt.data, sizeof(char), pkt.data_size, file) < 0){
                     perror("Write to file failed\n");
@@ -172,7 +173,7 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc !=  3) {
+    if (argc !=  4) {
         fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
