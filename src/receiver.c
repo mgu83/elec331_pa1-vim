@@ -71,7 +71,7 @@ void rrecv(unsigned short int myUDPport,
             unsigned long long int writeRate) {
 
     FILE* file;
-    int ack_num = 0;
+    uint64_t ack_num = 0;
     pq = constructPQ();
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -106,7 +106,7 @@ void rrecv(unsigned short int myUDPport,
 
         }*/
       // Receiving the packet
-      len = sizeof(other_addr);
+        len = sizeof(other_addr);
       if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&len) == -1) {
             printf("Waiting for new pkt, resending ACK for last pkt\n");
             send_ack(ack_num, TDACK);
@@ -133,14 +133,16 @@ void rrecv(unsigned short int myUDPport,
         /* Check if packet is out of order using the packet's sequence number and
           current acknowledgment number  */ 
         if (recv_pkt.seq_num > ack_num) {
-              printf("Received out of order packet");
+              printf("Received out of order packet\n");
+              printf("Packet seq num %d\n", recv_pkt.seq_num);
+              printf("ACk num %d\n", ack_num);
               send_ack(ack_num, TDACK);
         }
         else {
             // Write to the destination file 
             pq_push(pq, recv_pkt);
             ack_num += recv_pkt.data_size;
-            printf("data received: %d\n", recv_pkt.data_size);
+            printf("data received: %s\n", recv_pkt.data);
 
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");

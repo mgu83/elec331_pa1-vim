@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MSS             512 // Maximum Segment Size
+#define MSS             64 // Maximum Segment Size
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
-#define BUF_SIZE_MAX    32768
+#define BUF_SIZE_MAX    512
 
 /**
  * @brief Types of TCP packets - meant to substitute for flags
@@ -49,7 +49,7 @@ typedef struct  {
     uint64_t 	seq_num;
     uint64_t    ack_num;
 	int 	    data_size;
-	char        data[MSS];
+	char        data[BUF_SIZE_MAX];
 } packet;
 
 #endif

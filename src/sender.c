@@ -79,10 +79,10 @@ void send_pkt(packet* pkt){
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
     }*/
-    if(sendto(sockfd, pkt, sizeof(pkt), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
+    if(sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent data successfully: %d\n", pkt->data_size);
+    printf("Sent data successfully: %d\n", pkt->seq_num);
 }
 
 /**
@@ -141,13 +141,13 @@ void create_send_pkt(){
     if(bytes_read != MIN(bytes_to_send, cwnd)){
         perror("Fread failed in slow start\n");
     }
-    printf("after file read\n");
+    
     ss_pkt.pkt_type = DATA;
     ss_pkt.data_size = bytes_read;
     ss_pkt.seq_num = packet_seq_num;
-    printf("Size of message: %d\n", sizeof(packet));
-   // memcpy(ss_pkt.data, &buffer, bytes_read);
-    printf("after memcpy\n");
+    printf("Bytes read: %d\n", bytes_read);
+    memcpy(ss_pkt.data, &buffer, bytes_read);
+    printf("Data in packet: %s\n", ss_pkt.data);
     if(!retransmit_flag){
         packet_seq_num += bytes_read; 
     }
