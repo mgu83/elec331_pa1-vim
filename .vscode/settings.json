@@ -5,5 +5,12 @@
         "queue": "cpp",
         "stdlib.h": "c",
         "chrono": "c"
+    },
+    "[c]": {
+        "editor.formatOnSave": true
+    },
+    "[cpp]": {
+        "editor.formatOnSave": true
     }
+    
 }

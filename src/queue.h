@@ -1,9 +1,9 @@
 /**
  * @file queue.h
- * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
- * @brief Header file of priority queue data structure
- * @bug None
- * 
+ * @author Maggie Gu (@mgu83),
+ * @author Vi Kankanamge (@vidunikankan)
+ * @brief Function prototypes of queue data structure
+ * @bug No none bugs
  */
 #ifndef QUEUE_H
 #define QUEUE_H
@@ -13,75 +13,89 @@
 
 /**
  * @brief Data structure for Queue component
- * 
+ *
  */
-typedef struct QueueNode {
+typedef struct QueueNode
+{
     packet data;
-    struct QueueNode* next;
+    struct QueueNode *next;
 } QueueNode;
 
 /**
- * @brief Data structure for a queue, since it 
- * is not built-in to C. We use the queue to 
- * manage the packets on sender side. 
- * 
- * Queue is implemented using linked list component, QueueNode 
- * 
+ * @brief Data structure for a queue, since it
+ * is not built-in to C. We use the queue to
+ * manage the packets on sender side.
+ *
+ * Queue is implemented using linked list component, QueueNode
+ *
  */
-typedef struct {
-    QueueNode* front;
-    QueueNode* rear;
+typedef struct
+{
+    QueueNode *front;
+    QueueNode *rear;
     size_t size;
 } Queue;
 
 /**
  * @brief Instantiates queue
- * 
- * @param q 
+ *
+ * @param q
  */
-void initializeQueue(Queue* q);
-Queue* constructQueue();
+void initializeQueue(Queue *q);
+
+/**
+ * @brief Instantiates queue object
+ *
+ * @return Queue*
+ */
+Queue *constructQueue();
+
 /**
  * @brief Adds item to existing queue
- * 
- * @param q 
- * @param item 
+ *
+ * @param q
+ * @param item
  */
-void enqueue(Queue* q, packet item);
+void enqueue(Queue *q, packet item);
+
 /**
  * @brief Removes item to existing queue
- * 
- * @param q 
- * @return packet 
+ *
+ * @param q
+ * @return packet
  */
-packet dequeue(Queue* q);
+packet dequeue(Queue *q);
+
 /**
  * @brief Gets the first item in queue
- * 
- * @param q 
- * @return packet 
+ *
+ * @param q
+ * @return packet
  */
-packet front(const Queue* q);
+packet front(const Queue *q);
+
 /**
  * @brief Gets the last item in queue
- * 
- * @param q 
- * @return packet 
+ *
+ * @param q
+ * @return packet
  */
-packet back(const Queue* q);
+packet back(const Queue *q);
+
 /**
  * @brief Checks if queue is empty
- * 
- * @param q 
- * @return int 
+ *
+ * @param q
+ * @return int
  */
-int isEmpty(const Queue* q);
+int isEmpty(const Queue *q);
+
 /**
  * @brief Returns number of items in queue
- * 
- * @param q 
- * @return size_t 
+ *
+ * @param q
+ * @return size_t
  */
-size_t size(const Queue* q);
+size_t size(const Queue *q);
 
 #endif // QUEUE_H
