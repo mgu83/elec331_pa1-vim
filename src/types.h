@@ -12,7 +12,7 @@
 #define MSS             512 // Maximum Segment Size
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
-#define BUF_SIZE_MAX    16348
+#define BUF_SIZE_MAX    32768
 
 /**
  * @brief Types of TCP packets - meant to substitute for flags

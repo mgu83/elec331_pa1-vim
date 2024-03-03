@@ -75,10 +75,14 @@ Queue * ready_to_send;
  */
 void send_pkt(packet* pkt){
     printf("in send_pkt\n");
+    int buf_size = sizeof(pkt);
+    if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
+        perror("Error setting send buffer size");
+    }
     if(sendto(sockfd, pkt, sizeof(pkt), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent successfully\n");
+    printf("Sent data successfully: %s\n", pkt->data);
 }
 
 /**
@@ -168,7 +172,7 @@ void check_ack(){
                     state = SLOW_START;
                     break;
                 default:
-                    printf("Packet timed out in state %d:", state);
+                    printf("Packet timed out in state %d\n:", state);
                     break;
             }
 

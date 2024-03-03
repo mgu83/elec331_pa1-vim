@@ -50,6 +50,10 @@ void send_ack(int ack_num, packet_type pkt_type){
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
     printf("Inside send ack, size of packet: %d\n", sizeof(ack));
+    int buf_size = sizeof(ack);
+    if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
+        perror("Error setting send buffer size");
+    }
     if (sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr*) &other_addr, len) < 0) {
         perror("error in sending acknowledgement\n");
     }
@@ -136,6 +140,7 @@ void rrecv(unsigned short int myUDPport,
             // Write to the destination file 
             pq_push(pq, recv_pkt);
             ack_num += recv_pkt.data_size;
+            printf("data received: %s\n", recv_pkt.data);
 
             /*if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
