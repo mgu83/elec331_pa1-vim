@@ -147,7 +147,7 @@ void rrecv(unsigned short int myUDPport,
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
             }
-            ack_num += recv_pkt.data_size;
+            //ack_num += recv_pkt.data_size;
             // Use priority queue to select top packets 
             while (!pq_empty(pq) && (pq_top(pq).seq_num == ack_num)){
                 packet pkt = pq_top(pq);

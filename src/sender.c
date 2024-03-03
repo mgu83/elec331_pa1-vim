@@ -166,6 +166,7 @@ void check_ack(){
     }*/
     while(bytes_sent_and_ackd < packet_seq_num){
         printf("Waiting for ACK\n");
+        printf("packet seq num %d\n", packet_seq_num);
         int buf_size = sizeof(packet);
         if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
             perror("Error setting send buffer size");
@@ -184,7 +185,7 @@ void check_ack(){
             }*/
 
         }
-        if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){
+        if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){ //&& ackpkt.ack_num == packet_seq_num
             bytes_sent_and_ackd += packet_seq_num;
             bytes_to_send -= packet_seq_num;
             switch(state){
