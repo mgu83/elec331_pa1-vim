@@ -18,7 +18,7 @@ void pq_init(PriorityQueue* pq) {
         exit(EXIT_FAILURE);
     }
     pq->size = 0;
-    pq->capacity = INITIAL_SIZE;
+    pq->capacity = MAX_QUEUE_SIZE;
 }
 //TODO: Add destructor / free & call at the end of connection
 

@@ -41,6 +41,7 @@ float cong_win_size = MSS;
 uint64_t total_num_pkt;
 uint64_t bytes_to_send;
 uint64_t bytes_to_send_total;
+uint64_t last_bytes_read;
 uint64_t total_sent = 0;
 uint64_t total_received = 0;
 uint64_t highest_received = -1;
@@ -48,7 +49,7 @@ uint64_t total_duplicated = 0;
 float ss_threshold;
 uint64_t prev_mss, cur_mss = MSS;
 uint64_t cwnd = MSS;
-uint64_t ssthresh = 128*MSS;
+uint64_t ssthresh = 4*MSS;
 uint64_t bytes_sent_and_ackd = 0;
 uint64_t packet_seq_num = 0;
 state_type state;
@@ -74,7 +75,6 @@ Queue * ready_to_send;
  * @param pkt 
  */
 void send_pkt(packet* pkt){
-    printf("in send_pkt\n");
     /*int buf_size = sizeof(pkt);
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
@@ -82,7 +82,7 @@ void send_pkt(packet* pkt){
     if(sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent data successfully: %d\n", pkt->seq_num);
+    
 }
 
 /**
@@ -127,16 +127,13 @@ void queue_send(){
 
 
 void create_send_pkt(){
-    printf("inside create send pkt\n");
     int pkts_to_send = floor((bytes_to_send - bytes_sent_and_ackd)/cwnd);
     char buffer[cwnd];
     int bytes_read;
     packet ss_pkt;
 
-    if(fseek(file, bytes_sent_and_ackd, SEEK_SET) != 0){
-        perror("Fseek failed in slow start state\n");
-    }
-    printf("after fseek\n");
+
+    //printf("after fseek\n");
     bytes_read = fread(buffer, sizeof(char), MIN(bytes_to_send, cwnd), file);
     if(bytes_read != MIN(bytes_to_send, cwnd)){
         perror("Fread failed in slow start\n");
@@ -145,12 +142,11 @@ void create_send_pkt(){
     ss_pkt.pkt_type = DATA;
     ss_pkt.data_size = bytes_read;
     ss_pkt.seq_num = packet_seq_num;
-    printf("Bytes read: %d\n", bytes_read);
     memcpy(ss_pkt.data, &buffer, bytes_read);
-    printf("Data in packet: %s\n", ss_pkt.data);
     if(!retransmit_flag){
         packet_seq_num += bytes_read; 
     }
+    last_bytes_read = bytes_read;
     send_pkt(&ss_pkt);
 
 }
@@ -165,11 +161,9 @@ void check_ack(){
 
     }*/
     while(bytes_sent_and_ackd < packet_seq_num){
-        printf("Waiting for ACK\n");
-        printf("packet seq num %d\n", packet_seq_num);
         int buf_size = sizeof(packet);
         if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
-            perror("Error setting send buffer size");
+            perror("Error setting send buffer size\n");
         }
         if (recvfrom(sockfd, &ackpkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1){
             //Timeout case
@@ -186,8 +180,8 @@ void check_ack(){
 
         }
         if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){ //&& ackpkt.ack_num == packet_seq_num
-            bytes_sent_and_ackd += packet_seq_num;
-            bytes_to_send -= packet_seq_num;
+            bytes_sent_and_ackd += last_bytes_read;
+            bytes_to_send -= last_bytes_read;
             switch(state){
                 case SLOW_START:
                     if((cwnd*2) > ssthresh){
@@ -229,7 +223,6 @@ void check_ack(){
  */
 void dyn_pkts(){
     while(bytes_sent_and_ackd < bytes_to_send_total){
-        printf("Inside dynamic pkt func\n");
         switch(state){
             case SLOW_START:
                 cwnd *= 2;
@@ -305,7 +298,7 @@ void rsend(char* hostname,
     sent_not_ackd = constructQueue();
     ready_to_send = constructQueue();
     
-    printf("Inside rsend\n");
+    
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
@@ -316,7 +309,7 @@ void rsend(char* hostname,
     other_addr.sin_family = AF_INET;
     other_addr.sin_port = htons(hostUDPport);
     other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
-    printf("After memset\n");
+    
     file = fopen(filename, "rb");
     if (file == NULL) {
         perror("Failed to open file");
@@ -405,7 +398,7 @@ int main(int argc, char** argv) {
     }
     for(int i = 65; i < 91; i++){
         char c = (char)i;
-        for(int j = 0; j < MSS; j++){
+        for(int j = 0; j < 5*MSS; j++){
             if(fwrite(&c, sizeof(char), 1, send_file) != 1){
                 perror("error writing to file\n");
             }

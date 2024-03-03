@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <assert.h>
 
 #include "types.h"
 #include "priorityqueue.h"
@@ -31,6 +32,7 @@ struct sockaddr_in my_addr, other_addr;
 int sockfd, slen;
 int write_flag = 1;
 socklen_t len;
+FILE* rec_file;
 
 /**
  * @brief Priority queue to hold packets that prioritizes packets 
@@ -49,7 +51,6 @@ void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
-    printf("Sending ACK for %d\n", ack_num);
     int buf_size = sizeof(ack);
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
@@ -75,7 +76,7 @@ void rrecv(unsigned short int myUDPport,
     pq = constructPQ();
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket creation failed");
+        perror("socket creation failed\n");
         exit(EXIT_FAILURE);
     }
     memset(&my_addr, 0, sizeof(my_addr));
@@ -86,13 +87,13 @@ void rrecv(unsigned short int myUDPport,
     printf("Now binding\n");
 
     if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
-        perror("bind failed");
+        perror("bind failed\n");
         exit(EXIT_FAILURE);
     }
     
     file = fopen(destinationFile, "wb");
     if (file == NULL) {
-        perror("Failed to open file");
+        perror("Failed to open file\n");
         exit(EXIT_FAILURE);
     }
     
@@ -114,7 +115,7 @@ void rrecv(unsigned short int myUDPport,
       
       // Check if the packet is last
       if (recv_pkt.pkt_type == FIN){
-          printf("FIN packet has been received");
+          printf("FIN packet has been received\n");
           // If so, send acknowledgement that we have received last packet
           send_ack(ack_num, FINACK);
         //   int size_count = 0;
@@ -134,15 +135,12 @@ void rrecv(unsigned short int myUDPport,
           current acknowledgment number  */ 
         if (recv_pkt.seq_num > ack_num) {
               printf("Received out of order packet\n");
-              printf("Packet seq num %d\n", recv_pkt.seq_num);
-              printf("ACk num %d\n", ack_num);
               send_ack(ack_num, TDACK);
         }
         else {
             // Write to the destination file 
             pq_push(pq, recv_pkt);
             ack_num += recv_pkt.data_size;
-            printf("data received: %s\n", recv_pkt.data);
 
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
@@ -163,7 +161,6 @@ void rrecv(unsigned short int myUDPport,
    }
     fclose(file);
     close(sockfd);
-    printf("%s received.", destinationFile);
 }
 
 int main(int argc, char** argv) {
@@ -186,6 +183,30 @@ int main(int argc, char** argv) {
       writeRate = atoll(argv[3]);
     }
     rrecv(udpPort, destinationFile, writeRate);
+    
+    rec_file = fopen(destinationFile, "rb");
+    if (rec_file == NULL) {
+        perror("Failed to open file");
+        exit(EXIT_FAILURE);
+    }
+    for(int i = 65; i < 91; i++){
+        char c = (char)i;
+        for(int j = 0; j < 5*MSS; j++){
+            char d;
+            if(fseek(rec_file, (i-65)*(5*MSS) + j, SEEK_SET) != 0){
+                perror("Fseek failed in slow start state\n");
+            }
+            
+            if(fread(&d, sizeof(char), 1, rec_file) < 0){
+                perror("error writing to file\n");
+            }
+            
+            if(!(d == c)){
+                printf("Test failed: expected %s, read %s\n", c, d);
+            }
+        }
+    }
+    printf("Test 1 passed!\n");
 
     return EXIT_SUCCESS;
 }

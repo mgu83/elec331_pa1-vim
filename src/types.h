@@ -10,9 +10,9 @@
 #include <stdio.h>
 
 #define MSS             64 // Maximum Segment Size
-#define MAX_QUEUE_SIZE  10  // Maximum size of queue
+#define MAX_QUEUE_SIZE  128  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
-#define BUF_SIZE_MAX    512
+#define BUF_SIZE_MAX    8192
 
 /**
  * @brief Types of TCP packets - meant to substitute for flags
