@@ -10,8 +10,8 @@ To execute receiver, use './receiver [unsigned short int myUDPport] [char *desti
 To execute sender, use './sender [char *hostname] [unsigned short int hostUDPport] [char *filename] [unsigned long long int bytesToTransfer (optional)]'.
 
 @section Authors
-- Maggie Gu (@mgu83)
-- Vi Kankanamge (@vidunikankan)
+- Maggie Gu (mgu83)
+- Vi Kankanamge (vidunikankan)
 
 @section Implementation Highlights
 Priority Queue: Manages out-of-order packets on the receiver side, ensuring data integrity.
