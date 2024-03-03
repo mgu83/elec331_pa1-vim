@@ -327,6 +327,17 @@ void rsend(char *hostname,
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
+    int characters = 0;
+    for (char c = getc(file); c != EOF; c = getc(file)){
+        characters++;
+    }
+    if(bytesToTransfer > characters){
+        bytesToTransfer = characters;
+    }
+    if(fseek(file, 0, SEEK_SET) != 0){
+            perror("Fseek failed\n");
+    }
+
     bytes_sent_and_ackd = 0;
     bytes_to_send = bytesToTransfer;
     bytes_to_send_total = bytesToTransfer;
@@ -357,7 +368,7 @@ int main(int argc, char **argv)
     char *filename = argv[3];
     bytesToTransfer = atoll(argv[4]);
 
-    send_file = fopen(filename, "wb");
+    /*send_file = fopen(filename, "wb");
     if (send_file == NULL)
     {
         perror("Failed to open file at beginning");
@@ -375,7 +386,7 @@ int main(int argc, char **argv)
     //         }
     //     }
     // }
-    fclose(send_file);
+    fclose(send_file);*/
 
     rsend(hostname, hostUDPport, filename, bytesToTransfer);
 
