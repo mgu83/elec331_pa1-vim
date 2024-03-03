@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.10.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ELEC 331 PA1: Main Page</title>
+<title>ELEC 331 PA1: ELEC 331 PA1: UDP-based TCP Implementation</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -70,10 +70,33 @@ $(function() {
 </div>
 </div>
 
-<div class="header">
-  <div class="headertitle"><div class="title">ELEC 331 PA1 Documentation</div></div>
+<div><div class="header">
+  <div class="headertitle"><div class="title">ELEC 331 PA1: UDP-based TCP Implementation </div></div>
 </div><!--header-->
 <div class="contents">
+<div class="textblock"><h1><a class="anchor" id="Overview"></a>
+Overview</h1>
+<p>This project implements a custom UDP-based file transfer protocol consisting of two main components: a sender and a receiver. The sender module is responsible for breaking down a large file into smaller data packets and sequentially transmitting these packets over UDP to the specified receiver. The receiver module listens for incoming data packets, handles them according to their sequence numbers to ensure data is written in the correct order, and sends acknowledgments back to the sender.</p>
+<h1><a class="anchor" id="Compileation"></a>
+and Execution</h1>
+<p>To compile the code, use 'make clean' and 'make'. To execute receiver, use './receiver [unsigned short int myUDPport] [char *destinationFile] [unsigned long long int writeRate]'. To execute sender, use './sender [char *hostname] [unsigned short int hostUDPport] [char *filename] [unsigned long long int bytesToTransfer (optional)]'.</p>
+<h1><a class="anchor" id="Authors"></a>
+Authors</h1>
+<ul>
+<li>Maggie Gu (@mgu83)</li>
+<li>Vi Kankanamge (@vidunikankan)</li>
+</ul>
+<h1><a class="anchor" id="Implementation"></a>
+Highlights</h1>
+<p>Priority Queue: Manages out-of-order packets on the receiver side, ensuring data integrity. Dynamic Congestion Window: Optimizes data flow based on network conditions, implemented in the sender module. Uses slow start and AIMD protocols to optimize throughput while maintaining fairness. State Machine: Governs the sender's behavior, transitioning between slow start, congestion avoidance, and fast recovery. Queues: Used two queues to keep track of packets on sender side. See below.</p><ul>
+<li><b>Sent Not Acknowledged Queue:</b> Tracks packets that have been sent but not yet acknowledged by the receiver.</li>
+<li><b>Ready To Send Queue:</b> Holds packets that are prepared and ready to be sent, considering the available congestion window size.</li>
+</ul>
+<h1><a class="anchor" id="Challenges"></a>
+and Learning Outcomes</h1>
+<p>A major challenge we faced was implementing the fairness/congestion avoidance protocol. While implementing the states, our communication between the sender and the receiver broke down completely, and we were not able to receive any packets for a while. In the end, we figured out that this was because our packet size got too large during the slow-start state, and so we had to change the baseline MSS to account for the exponential increase. In the end, we were able to implement the correct protocols.</p>
+<dl class="bug"><dt><b><a class="el" href="bug.html#_bug000001">Bug</a></b></dt><dd>No known bugs. </dd></dl>
+</div></div><!-- PageDoc -->
 <a href="doxygen_crawl.html"/>
 </div><!-- contents -->
 <!-- start footer part -->
