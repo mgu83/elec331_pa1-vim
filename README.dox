@@ -15,13 +15,18 @@ To execute sender, use './sender [char *hostname] [unsigned short int hostUDPpor
 
 @section Implementation Highlights
 Priority Queue: Manages out-of-order packets on the receiver side, ensuring data integrity.
-Dynamic Congestion Window: Optimizes data flow based on network conditions, implemented in the sender module.
+Dynamic Congestion Window: Optimizes data flow based on network conditions, implemented in the sender module. Uses slow start and AIMD 
+protocols to optimize throughput while maintaining fairness.
 State Machine: Governs the sender's behavior, transitioning between slow start, congestion avoidance, and fast recovery.
 Queues: Used two queues to keep track of packets on sender side. See below.
 - **Sent Not Acknowledged Queue:** Tracks packets that have been sent but not yet acknowledged by the receiver.
 - **Ready To Send Queue:** Holds packets that are prepared and ready to be sent, considering the available congestion window size.
 
 @section Challenges and Learning Outcomes
+A major challenge we faced was implementing the fairness/congestion avoidance protocol. While implementing the states, our communication
+between the sender and the receiver broke down completely, and we were not able to receive any packets for a while. In the end, we
+figured out that this was because our packet size got too large during the slow-start state, and so we had to change the baseline
+MSS to account for the exponential increase. In the end, we were able to implement the correct protocols.
 
 
 @bug No known bugs.
