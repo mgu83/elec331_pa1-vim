@@ -364,17 +364,17 @@ int main(int argc, char **argv)
         fclose(send_file);
         exit(EXIT_FAILURE);
     }
-    for (int i = 65; i < 91; i++)
-    {
-        char c = (char)i;
-        for (int j = 0; j < 5 * MSS; j++)
-        {
-            if (fwrite(&c, sizeof(char), 1, send_file) != 1)
-            {
-                perror("error writing to file\n");
-            }
-        }
-    }
+    // for (int i = 65; i < 91; i++)
+    // {
+    //     char c = (char)i;
+    //     for (int j = 0; j < 5 * MSS; j++)
+    //     {
+    //         if (fwrite(&c, sizeof(char), 1, send_file) != 1)
+    //         {
+    //             perror("error writing to file\n");
+    //         }
+    //     }
+    // }
     fclose(send_file);
 
     rsend(hostname, hostUDPport, filename, bytesToTransfer);
