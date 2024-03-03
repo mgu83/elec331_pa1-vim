@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
 
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
-    if (argc != 4 || argc != 3) {
+    if (argc != 3) {
         fprintf(stderr, "There are %d arguments.\n", argc - 1); 
         fprintf(stderr, "usage: %s UDP_port filename_to_write\n\n", argv[0]);
         exit(1);
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
     udpPort = (unsigned short int) atoi(argv[1]);
     char* destinationFile = argv[2];
     unsigned long long int writeRate = 0;
-    if (argc == 3) {
+    if (argc == 4) {
       writeRate = atoll(argv[3]);
     }
     rrecv(udpPort, destinationFile, writeRate);
