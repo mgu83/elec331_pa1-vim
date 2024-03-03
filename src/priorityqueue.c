@@ -1,8 +1,9 @@
 /**
  * @file priorityqueue.c
- * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
+ * @author Maggie Gu (@mgu83), 
+ * @author Vi Kankanamge (@vidunikankan)
  * @brief Implementation of priority queue data structure
- * @bug None
+ * @bug No none bugs
  * 
  */
 #include <stdlib.h>

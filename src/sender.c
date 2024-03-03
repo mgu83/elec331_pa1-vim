@@ -1,9 +1,14 @@
 /**
  * @file sender.c
- * @author Maggie Gu (@mgu83) Vi Kankanamge (@vidunikankan)
- * @brief 
+ * @author Maggie Gu (@mgu83) 
+ * @author Vi Kankanamge (@vidunikankan)
+ * @brief This module implements the sender side of a UDP-based file transfer protocol.
  * 
+ * The sender is responsible for breaking down a large file into smaller data packets, sequentially
+ * transmitting these packets over UDP to a specified receiver, and handling acknowledgments (ACKs) from
+ * the receiver to ensure reliable data transfer. 
  * 
+ * @bug No known bugs.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,8 +26,7 @@
 #include "queue.h"
 
 /**
- * @brief MAX & MIN macros since C does not have built in
- * 
+ * @brief Utility macros for calculating maximum and minimum of two values.
  */
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -53,41 +57,32 @@ uint64_t bytes_sent_and_ackd = 0;
 uint64_t packet_seq_num = 0;
 state_type state;
 int retransmit_flag = 0;
+
 /**
- * @brief This queue acts as a record of all packets that have been sent but not yet acknowledged
- * It allows the sender to keep track of which packets might need to be retransmitted in case an 
- * ACK is not received within a certain timeout period or in response to receiving duplicate ACKs.
- * 
+ * @brief Queue for tracking packets sent but not yet acknowledged.
  */
 Queue * sent_not_ackd;
 /**
- * @brief This queue is used to manage the current set of packets that are prepared and ready to 
- * be sent. It is temporary storage for packets that are about to be sent. Once a packet is sent, 
- * it is removed from this queue but remains in backup_queue until it is acknowledged.
- * 
+ * @brief Queue for managing packets ready to be sent.
  */
 Queue * ready_to_send;
 
 /**
- * @brief Sends packet across connection
+ * @brief Sends a packet to the receiver over connection.
  * 
- * @param pkt 
+ * @param pkt Pointer to the packet structure to be sent.
  */
 void send_pkt(packet* pkt){
-    printf("in send_pkt\n");
-    /*int buf_size = sizeof(pkt);
-    if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
-        perror("Error setting send buffer size");
-    }*/
     if(sendto(sockfd, pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent data successfully: %d\n", pkt->seq_num);
 }
 
 /**
- * @brief Add packets to queues and then calls send_pkt
+ * @brief Prepares and sends packets based on available congestion window size.
  * 
+ * Reads data from the input file, segments it into packets conforming to the current
+ * congestion window size, enqueues packets for sending, and transmits them to the receiver.
  */
 void queue_send(){
     // Check if there is anything to send
@@ -98,7 +93,6 @@ void queue_send(){
     char buffer[MSS];
     packet pkt;
     int packets_to_send = floor((cong_win_size - size(sent_not_ackd) * MSS) / MSS); // available space / max space per packet
-    
     for (int i = 0; i < packets_to_send; i++){
         size_t read_size = fread(buffer, sizeof(char), MIN(bytes_to_send, MSS), file);
         if (read_size > 0){
@@ -115,7 +109,6 @@ void queue_send(){
             bytes_to_send -= read_size;
         }
     }
-    
     // Send all packets that are ready to be sent
     while (!isEmpty(ready_to_send)){
         packet p = front(ready_to_send);
@@ -125,9 +118,13 @@ void queue_send(){
     }
 }
 
-
+/**
+ * @brief Creates a packet from file data and sends it, considering retransmission needs.
+ * 
+ * Reads a portion of data from the file, encapsulates it into a packet, and sends it.
+ * Adjusts the sequence number accordingly unless in retransmission mode.
+ */
 void create_send_pkt(){
-    printf("inside create send pkt\n");
     int pkts_to_send = floor((bytes_to_send - bytes_sent_and_ackd)/cwnd);
     char buffer[cwnd];
     int bytes_read;
@@ -136,54 +133,35 @@ void create_send_pkt(){
     if(fseek(file, bytes_sent_and_ackd, SEEK_SET) != 0){
         perror("Fseek failed in slow start state\n");
     }
-    printf("after fseek\n");
     bytes_read = fread(buffer, sizeof(char), MIN(bytes_to_send, cwnd), file);
     if(bytes_read != MIN(bytes_to_send, cwnd)){
         perror("Fread failed in slow start\n");
     }
-    
     ss_pkt.pkt_type = DATA;
     ss_pkt.data_size = bytes_read;
     ss_pkt.seq_num = packet_seq_num;
-    printf("Bytes read: %d\n", bytes_read);
     memcpy(ss_pkt.data, &buffer, bytes_read);
-    printf("Data in packet: %s\n", ss_pkt.data);
     if(!retransmit_flag){
         packet_seq_num += bytes_read; 
     }
     send_pkt(&ss_pkt);
-
 }
 
+/**
+ * @brief Checks for acknowledgments from the receiver to manage sent packets.
+ * 
+ * Listens for ACK packets from the receiver, adjusting the congestion window and
+ * retransmission needs based on received acknowledgments.
+ */
 void check_ack(){
     packet ackpkt;
-   /* struct timeval tv;
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
-    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0){
-        perror("Error setting recv timeout\n");
-
-    }*/
     while(bytes_sent_and_ackd < packet_seq_num){
-        printf("Waiting for ACK\n");
-        printf("packet seq num %d\n", packet_seq_num);
         int buf_size = sizeof(packet);
         if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
             perror("Error setting send buffer size");
         }
         if (recvfrom(sockfd, &ackpkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1){
-            //Timeout case
             perror("Error receiving ack\n");
-            /*switch(state){
-                case CONG_AVOID:
-                    cwnd = MSS;
-                    state = SLOW_START;
-                    break;
-                default:
-                    printf("Packet timed out in state %d\n:", state);
-                    break;
-            }*/
-
         }
         if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){ //&& ackpkt.ack_num == packet_seq_num
             bytes_sent_and_ackd += packet_seq_num;
@@ -203,14 +181,13 @@ void check_ack(){
                 default:
                     break;
             }
-
         } else if(ackpkt.pkt_type == TDACK){
             switch(state){
                 case SLOW_START:
                     state = SLOW_RETRANS;
                     break;
                 case CONG_AVOID:
-                    ssthresh = floor(cwnd/2); //should this actually be floor?
+                    ssthresh = floor(cwnd/2); 
                     cwnd = MSS;
                     state = SLOW_START;
                     break;
@@ -223,13 +200,15 @@ void check_ack(){
     }
 }
 
+
 /**
- * @brief Dynamic packet schduling function (slow start, congestion avoidance, etc.)
+ * @brief Manages packet transmission through different phases of the transfer protocol.
  * 
+ * Controls the sending of packets by dynamically adjusting to network conditions
+ * and transitioning through slow start, congestion avoidance, and retransmission states.
  */
 void dyn_pkts(){
     while(bytes_sent_and_ackd < bytes_to_send_total){
-        printf("Inside dynamic pkt func\n");
         switch(state){
             case SLOW_START:
                 cwnd *= 2;
@@ -241,22 +220,17 @@ void dyn_pkts(){
                 create_send_pkt();
                 check_ack();
                 break;
-
             case SLOW_RETRANS:
                 retransmit_flag = 1;
                 create_send_pkt();
                 check_ack();
                 break;
-
         }
-
     }
 }
 
-
 /**
- * @brief Sends final acknowledgment package before connection terminates
- * 
+ * @brief Sends a final acknowledgment packet indicating the completion of data transmission.
  */
 void send_final_ack(){
     char temp[sizeof(packet)];
@@ -286,13 +260,16 @@ void send_final_ack(){
     }
 }
 
+
 /**
- * @brief Controls all the functions on receiver side
+ * @brief Initiates the file transfer process to the specified receiver.
  * 
- * @param hostname 
- * @param hostUDPport 
- * @param filename 
- * @param bytesToTransfer 
+ * Sets up the UDP connection, prepares the file for reading, and manages the sending process.
+ * 
+ * @param hostname The IP address or hostname of the receiver.
+ * @param hostUDPport The UDP port number on which the receiver is listening.
+ * @param filename Path to the file to be sent.
+ * @param bytesToTransfer The size of the file or the amount of data to be transferred.
  */
 void rsend(char* hostname, 
             unsigned short int hostUDPport, 
@@ -305,88 +282,34 @@ void rsend(char* hostname,
     sent_not_ackd = constructQueue();
     ready_to_send = constructQueue();
     
-    printf("Inside rsend\n");
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }
-
     memset((char *) &other_addr, 0, sizeof (other_addr));
     memset((char *) &my_addr, 0, sizeof (my_addr));
     other_addr.sin_family = AF_INET;
     other_addr.sin_port = htons(hostUDPport);
-    other_addr.sin_addr.s_addr = inet_addr(hostname);  // maybe user inet_ntoa?
-    printf("After memset\n");
+    other_addr.sin_addr.s_addr = inet_addr(hostname); 
     file = fopen(filename, "rb");
     if (file == NULL) {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
-
-    printf("File opened\n");
     bytes_sent_and_ackd = 0;
     bytes_to_send = bytesToTransfer;
     bytes_to_send_total = bytesToTransfer;
     state = SLOW_START;
     cur_mss = MSS;
     dyn_pkts();
-    printf("All ACKs received\n");
     send_final_ack();
     fclose(file);
-
-    /*queue_send();
-    printf("Queue sent\n");
-    while (total_sent < total_num_pkt || total_received < total_num_pkt){
-        printf("Waiting for ACKs\n");
-        slen = sizeof(other_addr);
-        if (recvfrom(sockfd, &pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1) {
-            printf("error in recvfrom");
-            // Restransmit everything in sent_not_ackd queue BUT DO NOT ERASE ANYTHING FROM IT
-            if (!isEmpty(sent_not_ackd)) {
-                Queue* tosend = sent_not_ackd;
-                while (!isEmpty(tosend)) {
-                    packet pk = front(tosend);
-                    send_pkt(&pk);
-                    dequeue(tosend);
-                }
-                ss_threshold = MAX(2 * MSS, cong_win_size / 2);
-                cong_win_size = MSS;
-                status = SLOW_START;
-            }
-        }
-        if (pkt.pkt_type == ACK){
-            // New ACK
-            if (pkt.ack_num > front(sent_not_ackd).seq_num){
-                highest_received = pkt.ack_num;
-                total_duplicated = 0;
-                int num_pkt = ceil((pkt.ack_num - front(sent_not_ackd).seq_num) / (1.0 * MSS));
-                int count = 0;
-                total_received += num_pkt;
-                while(!isEmpty(sent_not_ackd) && count < num_pkt){
-                    printf("Received ACK for packet %d \n", (front(sent_not_ackd).seq_num)/MSS);
-                    dequeue(sent_not_ackd);
-                    count++;
-                }
-                queue_send();
-            } else if (pkt.ack_num == front(sent_not_ackd).seq_num){ // Is this a ACK we have received? Duplicated
-                total_duplicated++;
-                cong_win_size = MAX(cong_win_size / 2, 1 * MSS); // Ensure window size doesn't fall below 1 MSS
-                ss_threshold = cong_win_size;
-                status = FAST_RETRANSMIT; // TO-DO: we need to deal with being in FAST_RETRANSMIT
-            }
-        }
-    }*/
 }
 
 int main(int argc, char** argv) {
-    // This is a skeleton of a main function.
-    // You should implement this function more completely
-    // so that one can invoke the file transfer from the
-    // command line.
     int hostUDPport;
     unsigned long long int bytesToTransfer;
     char* hostname = NULL;
-
     if (argc != 5) {
         fprintf(stderr, "usage: %s receiver_hostname receiver_port filename_to_xfer bytes_to_xfer\n\n", argv[0]);
         exit(1);
@@ -395,8 +318,6 @@ int main(int argc, char** argv) {
     hostname = argv[1];
     char* filename = argv[3];
     bytesToTransfer = atoll(argv[4]);
-    
-    printf("%s\n", filename);
     send_file = fopen(filename, "wb");
     if (send_file == NULL) {
         perror("Failed to open file at beginning");
@@ -413,8 +334,6 @@ int main(int argc, char** argv) {
 
     }
     fclose(send_file);
-
     rsend(hostname, hostUDPport, filename, bytesToTransfer);
-
     return (EXIT_SUCCESS);
 }

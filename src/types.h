@@ -1,6 +1,7 @@
 /**
  * @file types.h
- * @author Maggie Gu (@mgu83) Vi Kankanamge (@vidunikankan)
+ * @author Maggie Gu (@mgu83) 
+ * @author Vi Kankanamge (@vidunikankan)
  * @brief Data structure for TCP
  */
 #ifndef PARAM_H

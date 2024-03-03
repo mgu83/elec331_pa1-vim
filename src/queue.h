@@ -1,8 +1,9 @@
 /**
  * @file queue.h
- * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
- * @brief Header file of priority queue data structure
- * @bug None
+ * @author Maggie Gu (@mgu83), 
+ * @author Vi Kankanamge (@vidunikankan)
+ * @brief Function prototypes of queue data structure
+ * @bug No none bugs
  * 
  */
 #ifndef QUEUE_H

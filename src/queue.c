@@ -1,8 +1,9 @@
 /**
  * @file queue.c
- * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
- * @brief Header file of queue data structure
- * @bug None
+ * @author Maggie Gu (@mgu83)
+ * @author Vi Kankanamge (@vidunikankan)
+ * @brief Implementation of queue data structure
+ * @bug No known bugs
  * 
  */
 #include <stdio.h>

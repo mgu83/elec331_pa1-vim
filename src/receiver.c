@@ -1,8 +1,15 @@
 /**
  * @file receiver.c
- * @author Maggie Gu (@mgu83), Vi Kankanamge (@vidunikankan)
- * @brief Receiver side functions 
+ * @author Maggie Gu (@mgu83), 
+ * @author Vi Kankanamge (@vidunikankan)
+ * @brief This module implements the receiver side of a custom UDP-based file transfer protocol.
  * 
+ * The receiver is designed to listen for incoming data packets over UDP, handle them according to
+ * their sequence numbers, and write the data content to a specified output file in the correct order.
+ * It utilizes a priority queue to manage out-of-order packets. The receiver also sends acknowledgments (ACKs)
+ * back to the sender for each packet received, facilitating reliable data transfer over an unreliable protocol.
+ * 
+ * @bug No known bugs.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,23 +40,20 @@ int write_flag = 1;
 socklen_t len;
 
 /**
- * @brief Priority queue to hold packets that prioritizes packets 
- * based on number
- * 
+ * @brief Priority queue for managing the packets received out of order.
  */
 PriorityQueue * pq;
 
 /**
- * @brief Send acknowledgement to sender that packet has been received
- * 
- * @param ack_num 
- * @param pkt_type 
+ * @brief Sends an acknowledgment packet to the sender to signal that packet has been received.
+ *
+ * @param ack_num The sequence number of the next expected packet.
+ * @param pkt_type The type of packet, indicating ACK or other control messages.
  */
 void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
-    printf("Sending ACK for %d\n", ack_num);
     int buf_size = sizeof(ack);
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
@@ -60,20 +64,23 @@ void send_ack(int ack_num, packet_type pkt_type){
 }
 
 /**
- * @brief Controls all the functions on receiver side
- * 
- * @param myUDPport 
- * @param destinationFile 
- * @param writeRate 
+ * @brief Main function to control the receiving and processing of packets.
+ *
+ * Initializes the network socket, binds it to the specified UDP port, and enters a loop to receive data packets.
+ * Upon receiving a packet, it checks the packet type and handles it accordingly.
+ *
+ * @param myUDPport The UDP port on which the receiver listens for incoming packets.
+ * @param destinationFile The path to the output file where the received data will be written.
+ * @param writeRate Initially intended for controlling the write speed to the file.
  */
 void rrecv(unsigned short int myUDPport, 
             char* destinationFile, 
             unsigned long long int writeRate) {
-
     FILE* file;
     uint64_t ack_num = 0;
+    double writeDelay = writeRate > 0 ? (1.0 / writeRate) : 0; // Time in seconds for 1 byte
+    struct timespec reqDelay;
     pq = constructPQ();
-
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
@@ -82,96 +89,72 @@ void rrecv(unsigned short int myUDPport,
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(myUDPport);
     my_addr.sin_addr.s_addr = INADDR_ANY;
-    
-    printf("Now binding\n");
-
     if (bind(sockfd, (const struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
-    
     file = fopen(destinationFile, "wb");
     if (file == NULL) {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
-    
     while (write_flag) {
-      packet recv_pkt;
-        /*struct timeval tv;
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0){
-            perror("Error setting recv timeout\n");
-
-        }*/
-      // Receiving the packet
+        packet recv_pkt;
+        // Receiving the packet
         len = sizeof(other_addr);
-      if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&len) == -1) {
-            printf("Waiting for new pkt, resending ACK for last pkt\n");
+        if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&len) == -1) {
             send_ack(ack_num, TDACK);
-      }
+        }
       
-      // Check if the packet is last
-      if (recv_pkt.pkt_type == FIN){
-          printf("FIN packet has been received");
-          // If so, send acknowledgement that we have received last packet
-          send_ack(ack_num, FINACK);
-        //   int size_count = 0;
-        //     while (!pq_empty(pq) &&  size_count < ack_num){
-        //         packet pkt = pq_top(pq);
-        //         if(fwrite(pkt.data, sizeof(char), pkt.data_size, file) < 0){
-        //             perror("Write to file failed\n");
-        //         }
-        //         size_count += pkt.data_size;
-        //         pq_pop(pq);
-        //     }
-          break;
-          
+        // Check if the packet is last
+        if (recv_pkt.pkt_type == FIN){
+            printf("FIN packet has been received");
+            // If so, send acknowledgement that we have received last packet
+            send_ack(ack_num, FINACK);
+            break;    
       }
       else if (recv_pkt.pkt_type == DATA){
+        reqDelay.tv_nsec = (time_t) (writeDelay * recv_pkt.data_size);
+        reqDelay.tv_nsec = (long)((writeDelay * recv_pkt.data_size - reqDelay.tv_sec) * 1e9);
         /* Check if packet is out of order using the packet's sequence number and
           current acknowledgment number  */ 
         if (recv_pkt.seq_num > ack_num) {
-              printf("Received out of order packet\n");
-              printf("Packet seq num %d\n", recv_pkt.seq_num);
-              printf("ACk num %d\n", ack_num);
               send_ack(ack_num, TDACK);
         }
         else {
             // Write to the destination file 
             pq_push(pq, recv_pkt);
             ack_num += recv_pkt.data_size;
-            printf("data received: %s\n", recv_pkt.data);
-
             if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");
+            } else {
+                nanosleep(&reqDelay, NULL);
             }
-            //ack_num += recv_pkt.data_size;
             // Use priority queue to select top packets 
             while (!pq_empty(pq) && (pq_top(pq).seq_num == ack_num)){
                 packet pkt = pq_top(pq);
                 fwrite(pkt.data, sizeof(char), pkt.data_size, file);
+                nanosleep(&reqDelay, NULL);
                 ack_num += pkt.data_size;
                 pq_pop(pq);
             }
             send_ack(ack_num, ACK);
         }
         // Send acknowledgment to the sender that packet has been received 
-        //send_ack(ack_num, ACK); //NOTE: not sending anything to sender for now bc sender does not have a bound port
       }
    }
     fclose(file);
     close(sockfd);
-    printf("%s received.", destinationFile);
 }
 
+/**
+ * @brief Main control function in receiver.c
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char** argv) {
-    // This is a skeleton of a main function.
-    // You should implement this function more completely
-    // so that one can invoke the file transfer from the
-    // command line.
-
     unsigned short int udpPort;
     // TO-DO: Need to correct this back to 3 since we don't need write rate
     if (argc !=  4) {
@@ -186,6 +169,5 @@ int main(int argc, char** argv) {
       writeRate = atoll(argv[3]);
     }
     rrecv(udpPort, destinationFile, writeRate);
-
     return EXIT_SUCCESS;
 }
