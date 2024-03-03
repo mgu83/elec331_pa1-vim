@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MSS             512 // Maximum Segment Size
+#define MSS             64 // Maximum Segment Size
 #define MAX_QUEUE_SIZE  10  // Maximum size of queue
 #define TIMEOUT         10000 // Timeout variable
 #define BUF_SIZE_MAX    32768

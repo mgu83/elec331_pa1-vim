@@ -49,7 +49,7 @@ void send_ack(int ack_num, packet_type pkt_type){
     packet ack;
     ack.ack_num = ack_num;
     ack.pkt_type = pkt_type;
-    printf("Inside send ack, size of packet: %d\n", sizeof(ack));
+    printf("Sending ACK for %d\n", ack_num);
     int buf_size = sizeof(ack);
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
@@ -98,17 +98,17 @@ void rrecv(unsigned short int myUDPport,
     
     while (write_flag) {
       packet recv_pkt;
-      struct timeval tv;
-        tv.tv_sec = 5;
+        /*struct timeval tv;
+        tv.tv_sec = 10;
         tv.tv_usec = 0;
         if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0){
             perror("Error setting recv timeout\n");
 
-        }
+        }*/
       // Receiving the packet
       len = sizeof(other_addr);
       if (recvfrom(sockfd, &recv_pkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&len) == -1) {
-            printf("Packet timeout on receiver end\n");
+            printf("Waiting for new pkt, resending ACK for last pkt\n");
             send_ack(ack_num, TDACK);
       }
       
@@ -140,7 +140,7 @@ void rrecv(unsigned short int myUDPport,
             // Write to the destination file 
             pq_push(pq, recv_pkt);
             ack_num += recv_pkt.data_size;
-            printf("data received: %s\n", recv_pkt.data);
+            printf("data received: %d\n", recv_pkt.data_size);
 
             /*if(fwrite(&(recv_pkt.data), sizeof(char), recv_pkt.data_size, file) != recv_pkt.data_size){
                 perror("error writing to file\n");

@@ -75,14 +75,14 @@ Queue * ready_to_send;
  */
 void send_pkt(packet* pkt){
     printf("in send_pkt\n");
-    int buf_size = sizeof(pkt);
+    /*int buf_size = sizeof(pkt);
     if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
         perror("Error setting send buffer size");
-    }
+    }*/
     if(sendto(sockfd, pkt, sizeof(pkt), 0, (struct sockaddr*)&other_addr, sizeof(other_addr)) <  0){
         perror("Error sending bytes..\n");
     }
-    printf("Sent data successfully: %s\n", pkt->data);
+    printf("Sent data successfully: %d\n", pkt->data_size);
 }
 
 /**
@@ -137,7 +137,7 @@ void create_send_pkt(){
         perror("Fseek failed in slow start state\n");
     }
     printf("after fseek\n");
-    bytes_read = fread(ss_pkt.data, sizeof(char), MIN(bytes_to_send, cwnd), file);
+    bytes_read = fread(buffer, sizeof(char), MIN(bytes_to_send, cwnd), file);
     if(bytes_read != MIN(bytes_to_send, cwnd)){
         perror("Fread failed in slow start\n");
     }
@@ -146,6 +146,7 @@ void create_send_pkt(){
     ss_pkt.data_size = bytes_read;
     ss_pkt.seq_num = packet_seq_num;
     printf("Size of message: %d\n", sizeof(packet));
+    memcpy(ss_pkt.data, &buffer, bytes_read);
     printf("after memcpy\n");
     if(!retransmit_flag){
         packet_seq_num += bytes_read; 
@@ -156,17 +157,23 @@ void create_send_pkt(){
 
 void check_ack(){
     packet ackpkt;
-    struct timeval tv;
+   /* struct timeval tv;
     tv.tv_sec = 2;
     tv.tv_usec = 0;
     if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0){
         perror("Error setting recv timeout\n");
 
-    }
+    }*/
     while(bytes_sent_and_ackd < packet_seq_num){
+        printf("Waiting for ACK\n");
+        int buf_size = sizeof(packet);
+        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size)) < 0){
+            perror("Error setting send buffer size");
+        }
         if (recvfrom(sockfd, &ackpkt, sizeof(packet), 0, (struct sockaddr*)&other_addr, (socklen_t*)&slen) == -1){
             //Timeout case
-            switch(state){
+            perror("Error receiving ack\n");
+            /*switch(state){
                 case CONG_AVOID:
                     cwnd = MSS;
                     state = SLOW_START;
@@ -174,7 +181,7 @@ void check_ack(){
                 default:
                     printf("Packet timed out in state %d\n:", state);
                     break;
-            }
+            }*/
 
         }
         if(ackpkt.pkt_type == ACK && ackpkt.ack_num == packet_seq_num){
