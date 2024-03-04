@@ -1,4 +1,4 @@
-/**
+
 @mainpage ELEC 331 PA1: UDP-based TCP Implementation
 
 @section Overview
@@ -30,4 +30,3 @@ MSS to account for the exponential increase. In the end, we were able to impleme
 
 
 @bug No known bugs.
-**/
