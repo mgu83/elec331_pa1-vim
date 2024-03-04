@@ -1,5 +1,5 @@
 
-### ELEC 331 PA1: UDP-based TCP Implementation
+## UDP-based TCP Implementation
 
 ##### Overview
 This project implements a custom UDP-based file transfer protocol consisting of two main components: a sender and a receiver. The sender module is responsible for breaking down a large file into smaller data packets and sequentially transmitting these packets over UDP to the specified receiver. The receiver module listens for incoming data packets, handles them according to their sequence numbers to ensure data is written in the correct order, and sends acknowledgments back to the sender.
